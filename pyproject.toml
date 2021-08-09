@@ -3,6 +3,7 @@ name = "plox"
 version = "0.1.0"
 description = "Another python translation of Crafting Interpreter's jlox"
 authors = ["Caleb Ball <caleb.ball@explain.com.au>"]
+license = "GPL-3.0-or-later"
 readme = "README.md"
 
 [tool.poetry.dependencies]
