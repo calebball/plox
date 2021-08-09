@@ -2,6 +2,7 @@ from typing import List, Optional
 
 from attr import define, Factory
 
+from plox.cli import Plox
 from plox.tokens import TokenType, Token
 
 
@@ -46,6 +47,9 @@ class Scanner:
             self.add_token(TokenType.SLASH)
         elif c == "*":
             self.add_token(TokenType.STAR)
+
+        else:
+            Plox.error(self.line, "Unexpected character.")
 
     @property
     def is_at_end(self):
