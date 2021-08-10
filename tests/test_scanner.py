@@ -1,4 +1,5 @@
 import functools
+from collections import Counter
 
 import pytest
 from hypothesis import given, strategies as st
@@ -6,6 +7,10 @@ from hypothesis import given, strategies as st
 from plox.cli import Plox
 from plox.scanner import Scanner
 from plox.tokens import TokenType
+
+
+def remove_whitespace(string: str) -> str:
+    return ''.join(string.split())
 
 
 def no_errors(test_function):
@@ -20,6 +25,7 @@ def no_errors(test_function):
             had_error = Plox.HAD_ERROR
             Plox.HAD_ERROR = False
             assert not had_error
+
     return wrapper
 
 
@@ -35,6 +41,7 @@ def causes_error(test_function):
             had_error = Plox.HAD_ERROR
             Plox.HAD_ERROR = False
             assert had_error
+
     return wrapper
 
 
@@ -68,20 +75,27 @@ def test_scanning_single_characters(char: str, type: TokenType):
     assert tokens[0].type is type
 
 
-@given(source=st.text("(){},.-+;*"))
+@given(source=st.text("\n\t (){},.-+;*"))
 @no_errors
 def test_scanning_single_character_sequences(source: str):
     """Test that scanning a source string containing only single character
     tokens returns a list of tokens with the length of the source string plus
     one (for the EOF token.)
 
+    The allowed character set for the source string includes whitespace
+    characters, because those should be ignored by the scanner. This means we
+    can't just use the length of the string as the number of tokens, we need to
+    count the number of non-whitespace characters.
+
     Arguments:
         source: the Lox source string to scan.
     """
-    assert len(Scanner(source).scan_tokens()) == len(source) + 1
+    tokens = Scanner(source).scan_tokens()
+    assert len(tokens) == len(remove_whitespace(source)) + 1
+    assert max(token.line for token in tokens) == Counter(source)["\n"] + 1
 
 
-@given(source=st.text("@#^", min_size=1))
+@given(source=st.text("\n\t @#^", min_size=1).filter(lambda string: string.strip()))
 @causes_error
 def test_lexical_error(source: str):
     """Test that the scanner safely handles a string comprised of characters
@@ -91,12 +105,16 @@ def test_lexical_error(source: str):
     should end up with a list of tokens that only contains EOF. We also need to
     signal the error.
 
+    The allowed character set for the source string includes whitespace
+    characters, because those should be ignored by the scanner.
+
     Arguments:
         source: the Lox source string to scan.
     """
     tokens = Scanner(source).scan_tokens()
     assert len(tokens) == 1
     assert tokens[0].type is TokenType.EOF
+    assert tokens[0].line == Counter(source)["\n"] + 1
 
 
 @pytest.mark.parametrize(

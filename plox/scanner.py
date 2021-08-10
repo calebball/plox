@@ -70,6 +70,13 @@ class Scanner:
             else:
                 self.add_token(TokenType.SLASH)
 
+        # Discard whitespace
+        elif c in ["\t", " "]:
+            pass
+
+        elif c == "\n":
+            self.line += 1
+
         else:
             Plox.error(self.line, "Unexpected character.")
 
