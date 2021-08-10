@@ -1,4 +1,5 @@
 import enum
+from typing import Any
 
 from attr import define
 
@@ -57,7 +58,7 @@ class TokenType(enum.Enum):
 class Token:
     type: TokenType
     lexeme: str
-    literal: object
+    literal: Any
     line: int
 
     def __str__(self):

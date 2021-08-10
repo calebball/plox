@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from attr import define, Factory
 
@@ -187,7 +187,7 @@ class Scanner:
             keywords.get(self.source[self.start : self.current], TokenType.IDENTIFIER)
         )
 
-    def add_token(self, type: TokenType, literal: Optional[object] = None):
+    def add_token(self, type: TokenType, literal: Optional[Any] = None):
         self.tokens.append(
             Token(type, self.source[self.start : self.current], literal, self.line)
         )
