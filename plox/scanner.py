@@ -44,8 +44,6 @@ class Scanner:
             self.add_token(TokenType.PLUS)
         elif c == ";":
             self.add_token(TokenType.SEMICOLON)
-        elif c == "/":
-            self.add_token(TokenType.SLASH)
         elif c == "*":
             self.add_token(TokenType.STAR)
 
@@ -63,6 +61,14 @@ class Scanner:
             )
         elif c == "<":
             self.add_token(TokenType.LESS_EQUAL if self.match("=") else TokenType.LESS)
+
+        # Check for a comment
+        elif c == "/":
+            if self.match("/"):
+                while self.peek() != "\n" and not self.is_at_end:
+                    self.advance()
+            else:
+                self.add_token(TokenType.SLASH)
 
         else:
             Plox.error(self.line, "Unexpected character.")
@@ -83,6 +89,11 @@ class Scanner:
             return False
         self.current += 1
         return True
+
+    def peek(self) -> str:
+        if self.is_at_end:
+            return "\0"
+        return self.source[self.current]
 
     def add_token(self, type: TokenType, literal: Optional[object] = None):
         self.tokens.append(

@@ -68,7 +68,7 @@ def test_scanning_single_characters(char: str, type: TokenType):
     assert tokens[0].type is type
 
 
-@given(source=st.text("(){},.-+;/*"))
+@given(source=st.text("(){},.-+;*"))
 @no_errors
 def test_scanning_single_character_sequences(source: str):
     """Test that scanning a source string containing only single character
@@ -110,6 +110,7 @@ def test_lexical_error(source: str):
         (">=", TokenType.GREATER_EQUAL),
         ("<", TokenType.LESS),
         ("<=", TokenType.LESS_EQUAL),
+        ("/", TokenType.SLASH),
     ],
 )
 @no_errors
@@ -124,3 +125,15 @@ def test_scanning_one_or_two_char_lexeme(source: str, type: TokenType):
     tokens = Scanner(source).scan_tokens()
     assert len(tokens) == 2
     assert tokens[0].type is type
+
+
+@given(comment=st.text().filter(lambda string: "\n" not in string))
+@no_errors
+def test_scanning_comment(comment: str):
+    """Test that the scanner will discard a line that begins with a comment
+    token.
+
+    Arguments:
+        comment: a string to be used as a comment.
+    """
+    assert len(Scanner(f"//{comment}").scan_tokens()) == 1
