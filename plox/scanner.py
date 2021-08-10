@@ -8,7 +8,38 @@ from plox.tokens import TokenType, Token
 
 def is_digit(char: str) -> bool:
     """Check if a one character string is a digit."""
-    return ord('0') <= ord(char) <= ord('9')
+    return ord("0") <= ord(char) <= ord("9")
+
+
+def is_alpha(char: str) -> bool:
+    """Check if a one character string is an alphabetic character or an
+    undercore.
+    """
+    return (
+        ord("a") <= ord(char) <= ord("z")
+        or ord("A") <= ord(char) <= ord("Z")
+        or ord(char) == ord("_")
+    )
+
+
+keywords = {
+    "and": TokenType.AND,
+    "class": TokenType.CLASS,
+    "else": TokenType.ELSE,
+    "false": TokenType.FALSE,
+    "fun": TokenType.FUN,
+    "for": TokenType.FOR,
+    "it": TokenType.IT,
+    "nil": TokenType.NIL,
+    "or": TokenType.OR,
+    "print": TokenType.PRINT,
+    "return": TokenType.RETURN,
+    "super": TokenType.SUPER,
+    "this": TokenType.THIS,
+    "true": TokenType.TRUE,
+    "var": TokenType.VAR,
+    "while": TokenType.WHILE,
+}
 
 
 @define
@@ -87,6 +118,9 @@ class Scanner:
         elif is_digit(c):
             self.number()
 
+        elif is_alpha(c):
+            self.identifier()
+
         else:
             Plox.error(self.line, "Unexpected character.")
 
@@ -129,7 +163,6 @@ class Scanner:
 
         # Consume the closing " character
         self.advance()
-        print(self.start, self.current)
         self.add_token(
             TokenType.STRING, literal=self.source[self.start + 1 : self.current - 1]
         )
@@ -144,8 +177,15 @@ class Scanner:
             while is_digit(self.peek()):
                 self.advance()
 
-        print(self.source, self.source[self.start:self.current])
-        self.add_token(TokenType.NUMBER, float(self.source[self.start:self.current]))
+        self.add_token(TokenType.NUMBER, float(self.source[self.start : self.current]))
+
+    def identifier(self):
+        while is_alpha(self.peek()) or is_digit(self.peek()):
+            self.advance()
+
+        self.add_token(
+            keywords.get(self.source[self.start : self.current], TokenType.IDENTIFIER)
+        )
 
     def add_token(self, type: TokenType, literal: Optional[object] = None):
         self.tokens.append(

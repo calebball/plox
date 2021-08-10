@@ -5,7 +5,7 @@ import pytest
 from hypothesis import given, strategies as st
 
 from plox.cli import Plox
-from plox.scanner import Scanner
+from plox.scanner import keywords, Scanner
 from plox.tokens import TokenType
 
 
@@ -196,3 +196,43 @@ def test_scanning_decimal_numbers(number: float, decimal_places: int):
     assert len(tokens) == 2
     assert tokens[0].type is TokenType.NUMBER
     assert tokens[0].literal == float(source)
+
+
+@pytest.mark.parametrize(
+    "source, type", [(keyword, token_type) for keyword, token_type in keywords.items()]
+)
+@no_errors
+def test_scanning_keywords(source: str, type: TokenType):
+    """Test that we can correctly scan a keyword of the Lox language.
+
+    Arguments:
+        source: the Lox source code string we're scanning.
+        type: the type of token we're expecting to scan.
+    """
+    tokens = Scanner(source).scan_tokens()
+    assert len(tokens) == 2
+    assert tokens[0].type is type
+
+
+@given(
+    source=st.text(
+        st.characters(
+            whitelist_categories=("Ll", "Lu", "Nd"),
+            whitelist_characters="_",
+            max_codepoint=128,
+        ),
+        min_size=1,
+    )
+    .filter(lambda string: not (ord("0") <= ord(string[0]) <= ord("9")))
+    .filter(lambda string: string not in keywords)
+)
+@no_errors
+def test_scanning_identifiers(source: str):
+    """Test that we can correctly scan a valid identifier.
+
+    Arguments:
+        source: the Lox source code string we're scanning.
+    """
+    tokens = Scanner(source).scan_tokens()
+    assert len(tokens) == 2
+    assert tokens[0].type is TokenType.IDENTIFIER
