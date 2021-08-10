@@ -25,6 +25,7 @@ class Scanner:
     def scan_token(self):
         c = self.advance()
 
+        # Characters that uniquely define a single token
         if c == "(":
             self.add_token(TokenType.LEFT_PAREN)
         elif c == ")":
@@ -48,17 +49,40 @@ class Scanner:
         elif c == "*":
             self.add_token(TokenType.STAR)
 
+        # Characters which may generate a single character token or a
+        # two-character token
+        elif c == "!":
+            self.add_token(TokenType.BANG_EQUAL if self.match("=") else TokenType.BANG)
+        elif c == "=":
+            self.add_token(
+                TokenType.EQUAL_EQUAL if self.match("=") else TokenType.EQUAL
+            )
+        elif c == ">":
+            self.add_token(
+                TokenType.GREATER_EQUAL if self.match("=") else TokenType.GREATER
+            )
+        elif c == "<":
+            self.add_token(TokenType.LESS_EQUAL if self.match("=") else TokenType.LESS)
+
         else:
             Plox.error(self.line, "Unexpected character.")
 
     @property
-    def is_at_end(self):
+    def is_at_end(self) -> bool:
         return self.current >= len(self.source)
 
-    def advance(self):
+    def advance(self) -> str:
         char = self.source[self.current]
         self.current += 1
         return char
+
+    def match(self, char: str) -> bool:
+        if self.is_at_end:
+            return False
+        if self.source[self.current] != char:
+            return False
+        self.current += 1
+        return True
 
     def add_token(self, type: TokenType, literal: Optional[object] = None):
         self.tokens.append(

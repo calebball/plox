@@ -97,3 +97,30 @@ def test_lexical_error(source: str):
     tokens = Scanner(source).scan_tokens()
     assert len(tokens) == 1
     assert tokens[0].type is TokenType.EOF
+
+
+@pytest.mark.parametrize(
+    "source, type",
+    [
+        ("!", TokenType.BANG),
+        ("!=", TokenType.BANG_EQUAL),
+        ("=", TokenType.EQUAL),
+        ("==", TokenType.EQUAL_EQUAL),
+        (">", TokenType.GREATER),
+        (">=", TokenType.GREATER_EQUAL),
+        ("<", TokenType.LESS),
+        ("<=", TokenType.LESS_EQUAL),
+    ],
+)
+@no_errors
+def test_scanning_one_or_two_char_lexeme(source: str, type: TokenType):
+    """Test that we can scan a lexeme where the first character could either
+    be a single token itself, or be the start of a two character token.
+
+    Arguments:
+        source: the Lox source string to scan.
+        type: the type of token we're expecting to scan.
+    """
+    tokens = Scanner(source).scan_tokens()
+    assert len(tokens) == 2
+    assert tokens[0].type is type
