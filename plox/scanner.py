@@ -6,6 +6,11 @@ from plox.cli import Plox
 from plox.tokens import TokenType, Token
 
 
+def is_digit(char: str) -> bool:
+    """Check if a one character string is a digit."""
+    return ord('0') <= ord(char) <= ord('9')
+
+
 @define
 class Scanner:
     source: str
@@ -73,9 +78,14 @@ class Scanner:
         # Discard whitespace
         elif c in ["\t", " "]:
             pass
-
         elif c == "\n":
             self.line += 1
+
+        # Literal tokens
+        elif c == '"':
+            self.string()
+        elif is_digit(c):
+            self.number()
 
         else:
             Plox.error(self.line, "Unexpected character.")
@@ -101,6 +111,41 @@ class Scanner:
         if self.is_at_end:
             return "\0"
         return self.source[self.current]
+
+    def peek_next(self) -> str:
+        if self.current + 1 >= len(self.source):
+            return "\0"
+        return self.source[self.current + 1]
+
+    def string(self):
+        while self.peek() != '"' and not self.is_at_end:
+            if self.peek() == "\n":
+                self.line += 1
+            self.advance()
+
+        if self.is_at_end:
+            Plox.error(self.line, "Unterminated string.")
+            return
+
+        # Consume the closing " character
+        self.advance()
+        print(self.start, self.current)
+        self.add_token(
+            TokenType.STRING, literal=self.source[self.start + 1 : self.current - 1]
+        )
+
+    def number(self):
+        while is_digit(self.peek()):
+            self.advance()
+
+        if self.peek() == "." and is_digit(self.peek_next()):
+            self.advance()
+
+            while is_digit(self.peek()):
+                self.advance()
+
+        print(self.source, self.source[self.start:self.current])
+        self.add_token(TokenType.NUMBER, float(self.source[self.start:self.current]))
 
     def add_token(self, type: TokenType, literal: Optional[object] = None):
         self.tokens.append(

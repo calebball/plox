@@ -10,7 +10,7 @@ from plox.tokens import TokenType
 
 
 def remove_whitespace(string: str) -> str:
-    return ''.join(string.split())
+    return "".join(string.split())
 
 
 def no_errors(test_function):
@@ -155,3 +155,44 @@ def test_scanning_comment(comment: str):
         comment: a string to be used as a comment.
     """
     assert len(Scanner(f"//{comment}").scan_tokens()) == 1
+
+
+@given(string=st.text().filter(lambda string: '"' not in string))
+@no_errors
+def test_scanning_strings(string: str):
+    """Test that we can scan a (possibly multi-line) string.
+
+    Lox doesn't allow any character escaping, so generating strings to feed
+    into this test is easy.
+
+    Arguments:
+        string: the contents of a string to be scanned.
+    """
+    tokens = Scanner(f'"{string}"').scan_tokens()
+    assert len(tokens) == 2
+    assert tokens[0].type is TokenType.STRING
+    assert tokens[0].literal == string
+    assert tokens[1].line == Counter(string)["\n"] + 1
+
+
+@given(
+    number=st.floats(min_value=0, allow_nan=False, allow_infinity=False),
+    decimal_places=st.integers(min_value=0, max_value=32),
+)
+@no_errors
+def test_scanning_decimal_numbers(number: float, decimal_places: int):
+    """Test that we can scan an appropriately formatted decimal number.
+
+    Decimal numbers in Lox
+    - must begin with a digit
+    - must end with a digit
+
+    Arguments:
+        number: the number that we're going format and scan.
+        decimal_places: the amount of decimal places to format the number with.
+    """
+    source = f"{number:.{decimal_places}f}"
+    tokens = Scanner(source).scan_tokens()
+    assert len(tokens) == 2
+    assert tokens[0].type is TokenType.NUMBER
+    assert tokens[0].literal == float(source)
