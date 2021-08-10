@@ -1,7 +1,7 @@
 import enum
-from typing import Any
+from typing import Optional, Union
 
-from attr import define
+from attr import define, field
 
 
 class TokenType(enum.Enum):
@@ -58,8 +58,34 @@ class TokenType(enum.Enum):
 class Token:
     type: TokenType
     lexeme: str
-    literal: Any
-    line: int
+    literal: Optional[Union[str, float]]
+    line: int = field(converter=int)
 
     def __str__(self):
-        return f"{self.type} {self.lexeme} {self.literal}"
+        truthy_attributes = [
+            attr
+            for attr in [self.line, self.type.name, self.lexeme, self.literal]
+            if attr
+        ]
+        return " ".join(map(str, truthy_attributes))
+
+    @classmethod
+    def from_str(cls, string: str):
+        string_parts = string.split()
+        line = string_parts[0]
+        type = TokenType[string_parts[1]]
+
+        if not len(string_parts) > 2:
+            return cls(type, "", None, line)
+
+        lexeme = string_parts[2]
+
+        if not len(string_parts) > 3:
+            return cls(type, lexeme, None, line)
+
+        literal = string_parts[3]
+
+        if type is TokenType.NUMBER:
+            literal = float(literal)
+
+        return cls(type, lexeme, literal, line)
