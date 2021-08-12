@@ -103,6 +103,10 @@ class Scanner:
             if self.match("/"):
                 while self.peek() != "\n" and not self.is_at_end:
                     self.advance()
+
+            elif self.match("*"):
+                self.block_comment()
+
             else:
                 self.add_token(TokenType.SLASH)
 
@@ -150,6 +154,22 @@ class Scanner:
         if self.current + 1 >= len(self.source):
             return "\0"
         return self.source[self.current + 1]
+
+    def block_comment(self):
+        while (
+            not (self.peek() == "*" and self.peek_next() == "/") and not self.is_at_end
+        ):
+            if self.peek() == "\n":
+                self.line += 1
+
+            self.advance()
+
+        if self.is_at_end:
+            Plox.error(self.line, "Unterminated block comment.")
+            return
+
+        self.advance()
+        self.advance()
 
     def string(self):
         while self.peek() != '"' and not self.is_at_end:

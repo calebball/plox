@@ -157,6 +157,38 @@ def test_scanning_comment(comment: str):
     assert len(Scanner(f"//{comment}").scan_tokens()) == 1
 
 
+@given(
+    comment=st.text().filter(lambda string: "*/" not in string and "/*" not in string)
+)
+@no_errors
+def test_scanning_block_comment(comment: str):
+    """Test that the scanner will discard any text contained within a block
+    comment.
+
+    Arguments:
+        comment: a string to be used as a comment.
+    """
+    tokens = Scanner(f"/*{comment}*/").scan_tokens()
+    assert len(tokens) == 1
+    assert tokens[0].line == Counter(comment)["\n"] + 1
+
+
+@given(
+    comment=st.text().filter(lambda string: "*/" not in string and "/*" not in string)
+)
+@causes_error
+def test_scanning_unterminated_block_comment(comment: str):
+    """Test that an error is generated when an unterminated block comment is
+    scanned.
+
+    Arguments:
+        comment: a string to be used as a comment.
+    """
+    tokens = Scanner(f"/*{comment}").scan_tokens()
+    assert len(tokens) == 1
+    assert tokens[0].line == Counter(comment)["\n"] + 1
+
+
 @given(string=st.text().filter(lambda string: '"' not in string))
 @no_errors
 def test_scanning_strings(string: str):
