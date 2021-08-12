@@ -175,6 +175,20 @@ def test_scanning_strings(string: str):
     assert tokens[1].line == Counter(string)["\n"] + 1
 
 
+@given(string=st.text().filter(lambda string: '"' not in string))
+@causes_error
+def test_scanning_unterminated_string(string: str):
+    """Test that an error is generated when an unterminated comment is scanned.
+
+    Arguments:
+        string: the contents of a string to be scanned.
+    """
+    tokens = Scanner(f'"{string}').scan_tokens()
+    assert len(tokens) == 1
+    assert tokens[0].type is TokenType.EOF
+    assert tokens[0].line == Counter(string)["\n"] + 1
+
+
 @given(
     number=st.floats(min_value=0, allow_nan=False, allow_infinity=False),
     decimal_places=st.integers(min_value=0, max_value=32),
