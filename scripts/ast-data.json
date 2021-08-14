@@ -1,0 +1,17 @@
+{
+  "Binary": {
+    "left": {"type": "Expr"},
+    "operator": {"type": "Token"},
+    "right": {"type": "Expr"}
+  },
+  "Grouping": {
+    "expression": {"type": "Expr"}
+  },
+  "Literal": {
+    "value": {"type": "Any"}
+  },
+  "Unary": {
+    "operator": {"type": "Token"},
+    "right": {"type": "Expr"}
+  }
+}
