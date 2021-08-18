@@ -1,11 +1,20 @@
 from typing import Any, List
 
 from plox.ast import AstVisitor, Binary, Expr, Grouping, Literal, Unary
+from plox.cli import Plox
 from plox.errors import LoxRuntimeError
 from plox.tokens import Token, TokenType
 
 
 class Interpreter(AstVisitor):
+    def interpret(self, expr: Expr):
+        try:
+            value = self.evaluate(expr)
+            print(self.stringify(value))
+
+        except LoxRuntimeError as exc:
+            Plox.runtime_error(exc)
+
     def visit_binary(self, expr: Binary):
         left = self.evaluate(expr.left)
         right = self.evaluate(expr.right)
@@ -89,3 +98,15 @@ class Interpreter(AstVisitor):
     def check_number_operands(self, operator: Token, *operands: List[Any]) -> None:
         if any(not isinstance(operand, float) for operand in operands):
             raise LoxRuntimeError(operator, "Operand must be a number.")
+
+    def stringify(self, obj: Any) -> str:
+        if obj is None:
+            return "nil"
+
+        if isinstance(obj, float):
+            text = str(obj)
+            if text.endswith(".0"):
+                text = text[:-2]
+            return text
+
+        return str(obj)

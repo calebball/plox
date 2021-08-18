@@ -1,10 +1,15 @@
 import readline
 import sys
-from typing import List
+from typing import List, Optional
+
+from plox.errors import LoxRuntimeError
+from plox.tokens import Token, TokenType
 
 
 class Plox:
     HAD_ERROR: bool = False
+    HAD_RUNTIME_ERROR: bool = False
+    interpreter = None
 
     @classmethod
     def main(cls, args: List[str]):
@@ -24,6 +29,8 @@ class Plox:
 
         if cls.HAD_ERROR:
             sys.exit(65)
+        if cls.HAD_RUNTIME_ERROR:
+            sys.exit(70)
 
     @classmethod
     def run_prompt(cls):
@@ -37,20 +44,45 @@ class Plox:
 
     @classmethod
     def run(cls, source: str):
+        from plox.interpreter import Interpreter
+        from plox.parser import Parser
         from plox.scanner import Scanner
+
+        if cls.interpreter is None:
+            cls.interpreter = Interpreter()
 
         scanner = Scanner(source)
         tokens = scanner.scan_tokens()
-        print(tokens)
+
+        expr = Parser(tokens).parse()
+
+        # If expr is None here then HAD_ERROR will have been set to True, but
+        # we have to include the check here anyway to keep mypy happy.
+        if cls.HAD_ERROR or expr is None:
+            return
+
+        cls.interpreter.interpret(expr)
 
     @classmethod
-    def error(cls, line: int, message: str):
-        cls.report(line, "", message)
+    def error(cls, line: int, message: str, token: Optional[Token] = None):
+        if token is TokenType.EOF:
+            where = " at end"
+        elif token is not None:
+            where = f" at {token.lexeme}"
+        else:
+            where = ""
+
+        cls.report(line, where, message)
 
     @classmethod
     def report(cls, line: int, where: str, message: str):
         print(f"[line {line}] Error{where}: {message}", file=sys.stderr)
         cls.HAD_ERROR = True
+
+    @classmethod
+    def runtime_error(cls, error: LoxRuntimeError):
+        print(f"{error} + \n[line {error.token.line}]", file=sys.stderr)
+        cls.HAD_RUNTIME_ERROR = True
 
 
 def main():
