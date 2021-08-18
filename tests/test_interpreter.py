@@ -1,7 +1,10 @@
+import itertools
+
 import pytest
-from hypothesis import given, strategies as st
+from hypothesis import assume, given, strategies as st
 
 from plox.ast import Binary, Literal, Unary
+from plox.errors import LoxRuntimeError
 from plox.interpreter import Interpreter
 from plox.tokens import Token, TokenType
 
@@ -65,7 +68,7 @@ def test_interpreting_not_number_or_string_expression(literal: Literal):
         (Literal(None), True),
         (Literal(True), False),
         (Literal(False), True),
-    ]
+    ],
 )
 def test_interpreting_not_nil_or_bool_expression(literal: Literal, expected: bool):
     """Test that we correctly interpret a unary expression for the logical
@@ -84,11 +87,11 @@ def test_interpreting_not_nil_or_bool_expression(literal: Literal, expected: boo
 @pytest.mark.parametrize(
     "operator, expected",
     [
-        (Token(TokenType.PLUS, "+", None, 0), 3.),
-        (Token(TokenType.MINUS, "-", None, 0), -1.),
-        (Token(TokenType.STAR, "*", None, 0), 2.),
+        (Token(TokenType.PLUS, "+", None, 0), 3.0),
+        (Token(TokenType.MINUS, "-", None, 0), -1.0),
+        (Token(TokenType.STAR, "*", None, 0), 2.0),
         (Token(TokenType.SLASH, "/", None, 0), 0.5),
-    ]
+    ],
 )
 def test_basic_arithmetic_expressions(operator: Token, expected: float):
     """Test that we correctly evaluate some very basic arithmetic operations.
@@ -97,7 +100,7 @@ def test_basic_arithmetic_expressions(operator: Token, expected: float):
         operator: the arithmetic operator that we'll be evaluating.
         expected: the expected result of the expression.
     """
-    expr = Binary(Literal(1), operator, Literal(2))
+    expr = Binary(Literal(1.0), operator, Literal(2.0))
     assert expr.accept(Interpreter()) == expected
 
 
@@ -124,7 +127,7 @@ def test_concatenating_string_with_plus_operator(left: str, right: str):
         (Token(TokenType.GREATER_EQUAL, ">=", None, 0), False),
         (Token(TokenType.LESS, "<", None, 0), True),
         (Token(TokenType.LESS_EQUAL, "<=", None, 0), True),
-    ]
+    ],
 )
 def test_basic_comparison_expressions(operator: Token, expected: float):
     """Test that we correctly evaluate some very basic numeric comparison
@@ -134,7 +137,7 @@ def test_basic_comparison_expressions(operator: Token, expected: float):
         operator: the comparison operator that we'll be evaluating.
         expected: the expected result of the expression.
     """
-    expr = Binary(Literal(1), operator, Literal(2))
+    expr = Binary(Literal(1.0), operator, Literal(2.0))
     assert expr.accept(Interpreter()) is expected
 
 
@@ -194,3 +197,161 @@ def test_basic_not_equality_expressions(left: Literal, right: Literal):
     """
     expr = Binary(left, Token(TokenType.BANG_EQUAL, "!=", None, 0), right)
     assert expr.accept(Interpreter()) is (left.value != right.value)
+
+
+@given(
+    literal=st.one_of(
+        st.none(),
+        st.booleans(),
+        st.text(),
+    ).map(Literal),
+)
+def test_negating_non_number_raises_exception(literal: Literal):
+    """Tests that if we attempt to evaluate the negation of a non-numeric
+    literal then a LoxRuntimeError is raised to halt evaluation.
+
+    Arguments:
+        literal: the literal expression we'll attempt to negate.
+    """
+    expr = Unary(Token(TokenType.MINUS, "-", None, 0), literal)
+    with pytest.raises(LoxRuntimeError):
+        expr.accept(Interpreter())
+
+
+@pytest.mark.parametrize(
+    "operator",
+    [
+        Token(TokenType.GREATER, ">", None, 0),
+        Token(TokenType.GREATER_EQUAL, ">=", None, 0),
+        Token(TokenType.LESS, "<", None, 0),
+        Token(TokenType.LESS_EQUAL, "<=", None, 0),
+    ],
+)
+@given(
+    left=st.one_of(
+        st.none(),
+        st.booleans(),
+        st.text(),
+        st.floats(allow_nan=False, allow_infinity=False),
+    ).map(Literal),
+    right=st.one_of(
+        st.none(),
+        st.booleans(),
+        st.text(),
+        st.floats(allow_nan=False, allow_infinity=False),
+    ).map(Literal),
+)
+def test_comparison_of_non_numbers_raises_exception(
+    operator: Token, left: Literal, right: Literal
+):
+    """Tests that if we attempt to compare two literals where at least one is
+    not a number then a LoxRuntimeError is raised.
+
+    Arguments:
+        operator: the comparison operator used in the expression.
+        left: the literal that appears first in the expression.
+        right: the literal that appears second in the expression.
+    """
+    assume(not (isinstance(left.value, float) and isinstance(right.value, float)))
+    print(left.value, right.value)
+    expr = Binary(left, operator, right)
+    with pytest.raises(LoxRuntimeError):
+        expr.accept(Interpreter())
+
+
+@pytest.mark.parametrize(
+    "operator",
+    [
+        Token(TokenType.MINUS, "-", None, 0),
+        Token(TokenType.STAR, "*", None, 0),
+        Token(TokenType.SLASH, "/", None, 0),
+    ],
+)
+@given(
+    left=st.one_of(
+        st.none(),
+        st.booleans(),
+        st.text(),
+        st.floats(allow_nan=False, allow_infinity=False),
+    ).map(Literal),
+    right=st.one_of(
+        st.none(),
+        st.booleans(),
+        st.text(),
+        st.floats(allow_nan=False, allow_infinity=False),
+    ).map(Literal),
+)
+def test_arithmetic_of_non_numbers_raises_exception(
+    operator: Token, left: Literal, right: Literal
+):
+    """Tests that if we attempt to perform some arithmetic of two literals
+    where at least one is not a number then a LoxRuntimeError is raised.
+
+    Arguments:
+        operator: the comparison operator used in the expression.
+        left: the literal that appears first in the expression.
+        right: the literal that appears second in the expression.
+    """
+    assume(not (isinstance(left.value, float) and isinstance(right.value, float)))
+    expr = Binary(left, operator, right)
+    with pytest.raises(LoxRuntimeError):
+        expr.accept(Interpreter())
+
+
+@given(
+    left=st.one_of(
+        st.none(),
+        st.booleans(),
+        st.text(),
+        st.floats(allow_nan=False, allow_infinity=False),
+    ).map(Literal),
+    right=st.one_of(
+        st.none(),
+        st.booleans(),
+        st.text(),
+        st.floats(allow_nan=False, allow_infinity=False),
+    ).map(Literal),
+)
+def test_summation_of_non_matching_types_raises_exception(
+    left: Literal, right: Literal
+):
+    """Tests that if we attempt to add two literals where the types do not
+    match then a LoxRuntimeError.
+
+    Arguments:
+        left: the literal that appears first in the expression.
+        right: the literal that appears second in the expression.
+    """
+    assume(type(left.value) != type(right.value))
+    expr = Binary(left, Token(TokenType.PLUS, "+", None, 0), right)
+    with pytest.raises(LoxRuntimeError):
+        expr.accept(Interpreter())
+
+
+def test_summation_of_nil_raises_exception():
+    """Tests that if we attempt to add two nil literals then a LoxRuntimeError
+    is raised.
+    """
+    expr = Binary(Literal(None), Token(TokenType.PLUS, "+", None, 0), Literal(None))
+    with pytest.raises(LoxRuntimeError):
+        expr.accept(Interpreter())
+
+
+@pytest.mark.parametrize(
+    "left, right",
+    [
+        (Literal(left), Literal(right))
+        for left, right in itertools.product([True, False], [True, False])
+    ],
+)
+def test_summation_of_booleans_raises_exception(left: Literal, right: Literal):
+    """Tests that if we attempt to add two boolean literals then a
+    LoxRuntimeError is raised.
+
+    Arguments:
+        left: the literal that appears first in the expression.
+        right: the literal that appears second in the expression.
+    """
+    expr = Binary(left, Token(TokenType.PLUS, "+", None, 0), right)
+    with pytest.raises(LoxRuntimeError):
+        expr.accept(Interpreter())

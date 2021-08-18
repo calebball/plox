@@ -1,7 +1,8 @@
-from typing import Any
+from typing import Any, List
 
 from plox.ast import AstVisitor, Binary, Expr, Grouping, Literal, Unary
-from plox.tokens import TokenType
+from plox.errors import LoxRuntimeError
+from plox.tokens import Token, TokenType
 
 
 class Interpreter(AstVisitor):
@@ -16,31 +17,42 @@ class Interpreter(AstVisitor):
             return not self.is_equal(left, right)
 
         if expr.operator.type is TokenType.GREATER:
+            self.check_number_operands(expr.operator, left, right)
             return float(left) > float(right)
 
         if expr.operator.type is TokenType.GREATER_EQUAL:
+            self.check_number_operands(expr.operator, left, right)
             return float(left) >= float(right)
 
         if expr.operator.type is TokenType.LESS:
+            self.check_number_operands(expr.operator, left, right)
             return float(left) < float(right)
 
         if expr.operator.type is TokenType.LESS_EQUAL:
+            self.check_number_operands(expr.operator, left, right)
             return float(left) <= float(right)
 
         if expr.operator.type is TokenType.PLUS:
-            if isinstance(left, (int, float)) and isinstance(right, (int, float)):
+            if isinstance(left, float) and isinstance(right, float):
                 return float(left + right)
 
             if isinstance(left, str) and isinstance(right, str):
                 return left + right
 
+            raise LoxRuntimeError(
+                expr.operator, "Operands must be two numbers or two strings."
+            )
+
         if expr.operator.type is TokenType.MINUS:
+            self.check_number_operands(expr.operator, left, right)
             return float(left) - float(right)
 
         if expr.operator.type is TokenType.STAR:
+            self.check_number_operands(expr.operator, left, right)
             return float(left) * float(right)
 
         if expr.operator.type is TokenType.SLASH:
+            self.check_number_operands(expr.operator, left, right)
             return float(left) / float(right)
 
     def visit_grouping(self, expr: Grouping):
@@ -53,6 +65,7 @@ class Interpreter(AstVisitor):
         right = self.evaluate(expr.right)
 
         if expr.operator.type is TokenType.MINUS:
+            self.check_number_operands(expr.operator, right)
             return -float(right)
 
         if expr.operator.type is TokenType.BANG:
@@ -72,3 +85,7 @@ class Interpreter(AstVisitor):
 
     def is_equal(self, left: Any, right: Any) -> bool:
         return left == right
+
+    def check_number_operands(self, operator: Token, *operands: List[Any]) -> None:
+        if any(not isinstance(operand, float) for operand in operands):
+            raise LoxRuntimeError(operator, "Operand must be a number.")
