@@ -1,21 +1,29 @@
 from typing import Any, List
 
-from plox.expressions import ExprVisitor, Binary, Expr, Grouping, Literal, Unary
 from plox.cli import Plox
 from plox.errors import LoxRuntimeError
+from plox.expressions import Binary, Expr, ExprVisitor, Grouping, Literal, Unary
+from plox.statements import Expression, Print, Stmt, StmtVisitor
 from plox.tokens import Token, TokenType
 
 
-class Interpreter(ExprVisitor):
-    def interpret(self, expr: Expr):
+class Interpreter(ExprVisitor, StmtVisitor):
+    def interpret(self, statements: List[Stmt]):
         try:
-            value = self.evaluate(expr)
-            print(self.stringify(value))
+            for stmt in statements:
+                self.execute(stmt)
 
         except LoxRuntimeError as exc:
             Plox.runtime_error(exc)
 
-    def visit_binary(self, expr: Binary):
+    def visit_expression(self, stmt: Expression) -> None:
+        self.evaluate(stmt.expression)
+
+    def visit_print(self, stmt: Print) -> None:
+        value = self.evaluate(stmt.expression)
+        print(self.stringify(value))
+
+    def visit_binary(self, expr: Binary) -> Any:
         left = self.evaluate(expr.left)
         right = self.evaluate(expr.right)
 
@@ -64,13 +72,13 @@ class Interpreter(ExprVisitor):
             self.check_number_operands(expr.operator, left, right)
             return float(left) / float(right)
 
-    def visit_grouping(self, expr: Grouping):
+    def visit_grouping(self, expr: Grouping) -> Any:
         return self.evaluate(expr.expression)
 
-    def visit_literal(self, expr: Literal):
+    def visit_literal(self, expr: Literal) -> Any:
         return expr.value
 
-    def visit_unary(self, expr: Unary):
+    def visit_unary(self, expr: Unary) -> Any:
         right = self.evaluate(expr.right)
 
         if expr.operator.type is TokenType.MINUS:
@@ -80,7 +88,10 @@ class Interpreter(ExprVisitor):
         if expr.operator.type is TokenType.BANG:
             return not self.is_truthy(right)
 
-    def evaluate(self, expr: Expr):
+    def execute(self, stmt: Stmt) -> None:
+        return stmt.accept(self)
+
+    def evaluate(self, expr: Expr) -> Any:
         return expr.accept(self)
 
     def is_truthy(self, value: Any) -> bool:

@@ -54,14 +54,12 @@ class Plox:
         scanner = Scanner(source)
         tokens = scanner.scan_tokens()
 
-        expr = Parser(tokens).parse()
+        statements = Parser(tokens).parse()
 
-        # If expr is None here then HAD_ERROR will have been set to True, but
-        # we have to include the check here anyway to keep mypy happy.
-        if cls.HAD_ERROR or expr is None:
+        if cls.HAD_ERROR:
             return
 
-        cls.interpreter.interpret(expr)
+        cls.interpreter.interpret(statements)
 
     @classmethod
     def error(cls, line: int, message: str, token: Optional[Token] = None):
