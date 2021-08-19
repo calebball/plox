@@ -6,6 +6,10 @@
     },
     "Print": {
       "expression": "plox.expressions.Expr"
+    },
+    "Var": {
+      "name": "plox.tokens.Token",
+      "initialiser": "plox.expressions.Expr"
     }
   }
 }

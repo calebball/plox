@@ -3,7 +3,7 @@
   "children": {
     "Binary": {
       "left": "Expr",
-      "operator": "Token",
+      "operator": "plox.tokens.Token",
       "right": "Expr"
     },
     "Grouping": {
@@ -12,8 +12,11 @@
     "Literal": {
       "value": "typing.Any"
     },
+    "Variable": {
+      "name": "plox.tokens.Token"
+    },
     "Unary": {
-      "operator": "Token",
+      "operator": "plox.tokens.Token",
       "right": "Expr"
     }
   }
