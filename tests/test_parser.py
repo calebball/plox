@@ -4,7 +4,7 @@ from typing import List
 import pytest
 from hypothesis import given, strategies as st
 
-from plox.ast import Binary, Literal, Unary
+from plox.expressions import Binary, Literal, Unary
 from plox.parser import Parser
 from plox.tokens import Token, TokenType
 

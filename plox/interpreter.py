@@ -1,6 +1,6 @@
 from typing import Any, List
 
-from plox.ast import AstVisitor, Binary, Expr, Grouping, Literal, Unary
+from plox.expressions import AstVisitor, Binary, Expr, Grouping, Literal, Unary
 from plox.cli import Plox
 from plox.errors import LoxRuntimeError
 from plox.tokens import Token, TokenType

@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from attr import define, field
 
-from plox.ast import Binary, Expr, Grouping, Literal, Unary
+from plox.expressions import Binary, Expr, Grouping, Literal, Unary
 from plox.cli import Plox
 from plox.tokens import Token, TokenType
 

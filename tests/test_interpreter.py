@@ -3,7 +3,7 @@ import itertools
 import pytest
 from hypothesis import assume, given, strategies as st
 
-from plox.ast import Binary, Literal, Unary
+from plox.expressions import Binary, Literal, Unary
 from plox.errors import LoxRuntimeError
 from plox.interpreter import Interpreter
 from plox.tokens import Token, TokenType
