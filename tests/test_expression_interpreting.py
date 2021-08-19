@@ -1,9 +1,11 @@
 import itertools
+from typing import Any
 
 import pytest
 from hypothesis import assume, given, strategies as st
 
-from plox.expressions import Binary, Literal, Unary
+from plox.environment import Environment
+from plox.expressions import Binary, Literal, Unary, Variable
 from plox.errors import LoxRuntimeError
 from plox.interpreter import Interpreter
 from plox.tokens import Token, TokenType
@@ -353,5 +355,33 @@ def test_summation_of_booleans_raises_exception(left: Literal, right: Literal):
         right: the literal that appears second in the expression.
     """
     expr = Binary(left, Token(TokenType.PLUS, "+", None, 0), right)
+    with pytest.raises(LoxRuntimeError):
+        expr.accept(Interpreter())
+
+
+@pytest.mark.parametrize("name, value", [("foo", "bar"), ("baz", 4.0)])
+def test_evaluating_variable_reference(name: str, value: Any):
+    """Tests that if the interpreter encounters an initialised reference then
+    it correctly retrieves it from the environment.
+
+    Arguments:
+        name: the name of the variable that is being accessed.
+        value: the value that the variable is initialised with.
+    """
+    env = Environment()
+    env.define(name, value)
+    expr = Variable(Token(TokenType.IDENTIFIER, name, None, 0))
+    assert expr.accept(Interpreter(env)) == value
+
+
+@pytest.mark.parametrize("name", ["foo", "bar", "b4z"])
+def test_evaluating_uninitialised_variable_raise_error(name: str):
+    """Tests that if the interpreter encounters an uninitialised reference then
+    a LoxRuntimeError is raised.
+
+    Arguments:
+        name: the name of the variable that we attempt to access.
+    """
+    expr = Variable(Token(TokenType.IDENTIFIER, name, None, 0))
     with pytest.raises(LoxRuntimeError):
         expr.accept(Interpreter())

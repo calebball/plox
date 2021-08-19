@@ -1,13 +1,19 @@
 from typing import Any, List
 
+from attr import define, field
+
 from plox.cli import Plox
+from plox.environment import Environment
 from plox.errors import LoxRuntimeError
-from plox.expressions import Binary, Expr, ExprVisitor, Grouping, Literal, Unary
-from plox.statements import Expression, Print, Stmt, StmtVisitor
+from plox.expressions import Binary, Expr, ExprVisitor, Grouping, Literal, Unary, Variable
+from plox.statements import Expression, Print, Stmt, StmtVisitor, Var
 from plox.tokens import Token, TokenType
 
 
+@define
 class Interpreter(ExprVisitor, StmtVisitor):
+    environment: Environment = field(factory=Environment)
+
     def interpret(self, statements: List[Stmt]):
         try:
             for stmt in statements:
@@ -15,6 +21,13 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
         except LoxRuntimeError as exc:
             Plox.runtime_error(exc)
+
+    def visit_var(self, stmt: Var) -> None:
+        value = None
+        if stmt.initialiser is not None:
+            value = self.evaluate(stmt.initialiser)
+
+        self.environment.define(stmt.name.lexeme, value)
 
     def visit_expression(self, stmt: Expression) -> None:
         self.evaluate(stmt.expression)
@@ -77,6 +90,9 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def visit_literal(self, expr: Literal) -> Any:
         return expr.value
+
+    def visit_variable(self, expr: Variable) -> Any:
+        return self.environment.get(expr.name)
 
     def visit_unary(self, expr: Unary) -> Any:
         right = self.evaluate(expr.right)
