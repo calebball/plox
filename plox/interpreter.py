@@ -1,12 +1,12 @@
 from typing import Any, List
 
-from plox.expressions import AstVisitor, Binary, Expr, Grouping, Literal, Unary
+from plox.expressions import ExprVisitor, Binary, Expr, Grouping, Literal, Unary
 from plox.cli import Plox
 from plox.errors import LoxRuntimeError
 from plox.tokens import Token, TokenType
 
 
-class Interpreter(AstVisitor):
+class Interpreter(ExprVisitor):
     def interpret(self, expr: Expr):
         try:
             value = self.evaluate(expr)

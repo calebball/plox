@@ -3,12 +3,13 @@ import argparse
 import json
 import typing
 from io import StringIO
+from typing import Dict, List
 
 
 parser = argparse.ArgumentParser(
-    description="Generate the Plox AST representation from a JSON data file."
+    description="Generate a Plox data class structure from a JSON data file."
 )
-parser.add_argument("ast_data", help="File path of the JSON data file.", type=str)
+parser.add_argument("class_spec", help="File path of the JSON data file.", type=str)
 parser.add_argument(
     "--output",
     "-o",
@@ -20,69 +21,81 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-with open(args.ast_data, "r") as data_file:
-    ast_data = json.load(data_file)
+with open(args.class_spec, "r") as data_file:
+    class_spec = json.load(data_file)
 
 
-ast_classes = set(ast_data.keys())
-ast_classes.add("Expr")
+classes = set(class_spec["children"].keys())
+classes.add(class_spec["parent"])
 
 attribute_types = set(
     [
-        attribute_data["type"]
-        for attributes in ast_data.values()
-        for attribute_data in attributes.values()
+        type
+        for attributes in class_spec["children"].values()
+        for type in attributes.values()
     ]
 )
 
-source = StringIO()
-
-source.write("from abc import ABC, abstractmethod\n")
-if attribute_types - ast_classes:
+import_lines = [
+    "from abc import ABC, abstractmethod",
+    "",
+    "from attr import define",
+    "",
+    "from plox.tokens import Token",
+]
+if attribute_types - classes:
     python_types = [
-        type for type in attribute_types - ast_classes if getattr(typing, type, False)
+        type for type in attribute_types - classes if getattr(typing, type, False)
     ]
-    source.write(f"from typing import {', '.join(python_types)}\n")
-    source.write("\n")
+    import_lines.insert(1, f"from typing import {', '.join(python_types)}")
+import_block = "\n".join(import_lines)
 
-source.write("from attr import define\n")
-source.write("\n")
-source.write("from plox.tokens import Token\n")
-source.write("\n")
-source.write("\n")
+parent_block = f"""class {class_spec["parent"]}:
+    def accept(self, visitor: "{class_spec["parent"]}Visitor"):
+        ..."""
 
-source.write("class Expr:\n")
-source.write('    def accept(self, visitor: "AstVisitor"):\n')
-source.write("        ...\n")
 
-for class_name, attributes in ast_data.items():
-    source.write("\n")
-    source.write("\n")
-    source.write("@define\n")
-    source.write(f"class {class_name}(Expr):\n")
-
-    for attribute_name, attribute_data in attributes.items():
-        source.write(f"    {attribute_name}: {attribute_data['type']}\n")
-
-    source.write("\n")
-    source.write('    def accept(self, visitor: "AstVisitor"):\n')
-    source.write(f"        return visitor.visit_{class_name.lower()}(self)\n")
-
-source.write("\n")
-source.write("\n")
-source.write("class AstVisitor(ABC):\n")
-for class_name in ast_data.keys():
-    source.write("    @abstractmethod\n")
-    source.write(
-        f"    def visit_{class_name.lower()}(self, expr: {class_name}):\n"
+def generate_child_definition(child_name: str, attributes: List[Dict[str, str]]) -> str:
+    definition_lines = ["@define", f"class {child_name}({class_spec['parent']}):"]
+    definition_lines.extend(
+        [f"    {name}: {type}" for name, type in attributes.items()]
     )
-    source.write("        ...\n")
-    source.write("\n")
+    definition_lines.append("")
+    definition_lines.extend(
+        [
+            f'    def accept(self, visitor: "{class_spec["parent"]}Visitor"):',
+            f"        return visitor.visit_{child_name.lower()}(self)",
+        ]
+    )
+    return "\n".join(definition_lines)
 
+
+visitor_lines = [f"class {class_spec['parent']}Visitor(ABC):"]
+for child in class_spec["children"].keys():
+    visitor_lines.extend(
+        [
+            "    @abstractmethod",
+            f"    def visit_{child.lower()}(self, expr: {child}):",
+            "        ...",
+            "",
+        ]
+    )
+visitor_block = "\n".join(visitor_lines)
+
+source_blocks = [import_block, parent_block]
+source_blocks.extend(
+    [
+        generate_child_definition(child, attributes)
+        for child, attributes in class_spec["children"].items()
+    ]
+)
+source_blocks.append(visitor_block)
+
+source = "\n\n\n".join(source_blocks)
 
 if args.output:
     with open(args.output, "w") as output_file:
-        output_file.write(source.getvalue())
+        output_file.write(source)
 
 else:
-    print(source.getvalue())
+    print(source)

@@ -7,7 +7,7 @@ from plox.tokens import Token
 
 
 class Expr:
-    def accept(self, visitor: "AstVisitor"):
+    def accept(self, visitor: "ExprVisitor"):
         ...
 
 
@@ -17,7 +17,7 @@ class Binary(Expr):
     operator: Token
     right: Expr
 
-    def accept(self, visitor: "AstVisitor"):
+    def accept(self, visitor: "ExprVisitor"):
         return visitor.visit_binary(self)
 
 
@@ -25,7 +25,7 @@ class Binary(Expr):
 class Grouping(Expr):
     expression: Expr
 
-    def accept(self, visitor: "AstVisitor"):
+    def accept(self, visitor: "ExprVisitor"):
         return visitor.visit_grouping(self)
 
 
@@ -33,7 +33,7 @@ class Grouping(Expr):
 class Literal(Expr):
     value: Any
 
-    def accept(self, visitor: "AstVisitor"):
+    def accept(self, visitor: "ExprVisitor"):
         return visitor.visit_literal(self)
 
 
@@ -42,11 +42,11 @@ class Unary(Expr):
     operator: Token
     right: Expr
 
-    def accept(self, visitor: "AstVisitor"):
+    def accept(self, visitor: "ExprVisitor"):
         return visitor.visit_unary(self)
 
 
-class AstVisitor(ABC):
+class ExprVisitor(ABC):
     @abstractmethod
     def visit_binary(self, expr: Binary):
         ...
@@ -62,4 +62,3 @@ class AstVisitor(ABC):
     @abstractmethod
     def visit_unary(self, expr: Unary):
         ...
-
