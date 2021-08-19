@@ -4,7 +4,7 @@ from attr import define, field
 
 from plox.cli import Plox
 from plox.errors import LoxParseError
-from plox.expressions import Binary, Expr, Grouping, Literal, Unary, Variable
+from plox.expressions import Assign, Binary, Expr, Grouping, Literal, Unary, Variable
 from plox.statements import Expression, Print, Stmt, Var
 from plox.tokens import Token, TokenType
 
@@ -153,9 +153,30 @@ class Parser:
         """Parse the next expression in the token stream.
 
         This method implements the rule
-            expression -> equality
+            expression -> assignment
         """
-        return self.equality()
+        return self.assignment()
+
+    def assignment(self) -> Expr:
+        """Parse an assignment expression from the token stream.
+
+        This method implements the rule
+            assignment  -> IDENTIFIER "=" assignment
+                        |  equality
+        """
+        expr = self.equality()
+
+        if self.match(TokenType.EQUAL):
+            equals = self.previous()
+            value = self.assignment()
+
+            if isinstance(expr, Variable):
+                name = expr.name
+                return Assign(name, value)
+
+            Plox.error(equals.line, "Invalid assignment target.", equals)
+
+        return expr
 
     def equality(self) -> Expr:
         """Parse an equality expression from the token stream.

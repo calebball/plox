@@ -1,6 +1,10 @@
 {
   "parent": "Expr",
   "children": {
+    "Assign": {
+      "name": "plox.tokens.Token",
+      "value": "Expr"
+    },
     "Binary": {
       "left": "Expr",
       "operator": "plox.tokens.Token",
@@ -12,12 +16,12 @@
     "Literal": {
       "value": "typing.Any"
     },
-    "Variable": {
-      "name": "plox.tokens.Token"
-    },
     "Unary": {
       "operator": "plox.tokens.Token",
       "right": "Expr"
+    },
+    "Variable": {
+      "name": "plox.tokens.Token"
     }
   }
 }

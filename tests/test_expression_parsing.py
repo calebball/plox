@@ -4,7 +4,7 @@ from typing import List
 import pytest
 from hypothesis import given, strategies as st
 
-from plox.expressions import Binary, Literal, Unary, Variable
+from plox.expressions import Assign, Binary, Literal, Unary, Variable
 from plox.parser import Parser
 from plox.tokens import Token, TokenType
 
@@ -302,3 +302,41 @@ def test_unary_expressions_are_higher_precedence_than_binary(
         binary_operator,
         Unary(right_unary, Literal(2)),
     )
+
+
+@pytest.mark.parametrize(
+    "identifier, literal",
+    [
+        (
+            Token(TokenType.IDENTIFIER, "foo", None, 0),
+            Token(TokenType.NIL, "nil", None, 0),
+        ),
+        (
+            Token(TokenType.IDENTIFIER, "foo", None, 0),
+            Token(TokenType.FALSE, "False", False, 0),
+        ),
+        (
+            Token(TokenType.IDENTIFIER, "foo", None, 0),
+            Token(TokenType.STRING, "ohhai", "ohhai", 0),
+        ),
+        (
+            Token(TokenType.IDENTIFIER, "foo", None, 0),
+            Token(TokenType.NUMBER, "1", 1.0, 0),
+        ),
+    ],
+)
+def test_assignment_to_literal_expressions(identifier: Token, literal: Token):
+    """Tests that we can parse an assignment of a literal value to a variable.
+
+    Arguments:
+        identifier: the identifier token containing the name we're assigning.
+        literal: the value that we're assiging.
+    """
+    tokens = add_terminator(
+        [
+            identifier,
+            Token(TokenType.EQUAL, "=", None, 0),
+            literal,
+        ]
+    )
+    assert Parser(tokens).expression() == Assign(identifier, Literal(literal.literal))
