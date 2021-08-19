@@ -2,10 +2,10 @@
   "parent": "Stmt",
   "children": {
     "Expression": {
-      "expression": "Expr"
+      "expression": "plox.expressions.Expr"
     },
     "Print": {
-      "expression": "Expr"
+      "expression": "plox.expressions.Expr"
     }
   }
 }

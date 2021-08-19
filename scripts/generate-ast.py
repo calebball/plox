@@ -2,6 +2,7 @@
 import argparse
 import json
 import typing
+from collections import defaultdict
 from io import StringIO
 from typing import Dict, List
 
@@ -25,30 +26,38 @@ with open(args.class_spec, "r") as data_file:
     class_spec = json.load(data_file)
 
 
-classes = set(class_spec["children"].keys())
-classes.add(class_spec["parent"])
+extra_imports = defaultdict(set)
+for child, attributes in class_spec["children"].items():
+    for attr_name, type_name in attributes.items():
+        if "." in type_name:
+            import_class = type_name.split(".")[-1]
+            import_path = ".".join(type_name.split(".")[:-1])
+            extra_imports[import_path].add(import_class)
+            attributes[attr_name] = import_class
 
-attribute_types = set(
-    [
-        type
-        for attributes in class_spec["children"].values()
-        for type in attributes.values()
-    ]
-)
-
-import_lines = [
+stdlib_imports = [
     "from abc import ABC, abstractmethod",
-    "",
+]
+external_imports = [
     "from attr import define",
-    "",
+]
+plox_imports = [
     "from plox.tokens import Token",
 ]
-if attribute_types - classes:
-    python_types = [
-        type for type in attribute_types - classes if getattr(typing, type, False)
+
+for path, names in extra_imports.items():
+    if "plox" in path:
+        plox_imports.append(f"from {path} import {','.join(names)}")
+    else:
+        stdlib_imports.insert(1, f"from {path} import {','.join(names)}")
+
+import_block = "\n\n".join(
+    [
+        "\n".join(stdlib_imports),
+        "\n".join(external_imports),
+        "\n".join(sorted(plox_imports)),
     ]
-    import_lines.insert(1, f"from typing import {', '.join(python_types)}")
-import_block = "\n".join(import_lines)
+)
 
 parent_block = f"""class {class_spec["parent"]}:
     def accept(self, visitor: "{class_spec["parent"]}Visitor"):

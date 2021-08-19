@@ -10,7 +10,7 @@
       "expression": "Expr"
     },
     "Literal": {
-      "value": "Any"
+      "value": "typing.Any"
     },
     "Unary": {
       "operator": "Token",

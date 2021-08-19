@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import 
 
 from attr import define
 
+from plox.expressions import Expr
 from plox.tokens import Token
 
 
