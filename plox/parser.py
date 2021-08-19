@@ -2,8 +2,9 @@ from typing import List, Optional
 
 from attr import define, field
 
-from plox.expressions import Binary, Expr, Grouping, Literal, Unary
 from plox.cli import Plox
+from plox.expressions import Binary, Expr, Grouping, Literal, Unary
+from plox.statements import Expression, Print, Stmt
 from plox.tokens import Token, TokenType
 
 
@@ -18,11 +19,19 @@ class Parser:
     tokens: List[Token]
     current: int = field(default=0, init=False)
 
-    def parse(self) -> Optional[Expr]:
-        try:
-            return self.expression()
-        except ParseError:
-            return None
+    def parse(self) -> List[Stmt]:
+        """Parse the token stream using a recursive descent parser.
+
+        This method implements the rule
+            program -> statement* EOF
+
+        Returns:
+            The list of statements parsed out of the token stream.
+        """
+        statements = []
+        while not self.is_at_end:
+            statements.append(self.statement())
+        return statements
 
     @property
     def is_at_end(self):
@@ -83,10 +92,52 @@ class Parser:
 
         self.advance()
 
+    def statement(self) -> Stmt:
+        """Parse the next statement from the token stream.
+
+        This method implements the rule
+            statement   -> exprStmt
+                        |  printStmt
+        """
+        if self.match(TokenType.PRINT):
+            return self.print_statement()
+
+        return self.expression_statement()
+
+    def print_statement(self) -> Print:
+        """Parse the contents of a print statement from the token stream.
+
+        This method implements the rule
+            printStmt -> "print" expression ";"
+        """
+        value = self.expression()
+        self.consume(TokenType.SEMICOLON, "Expect ';' after value.")
+        return Print(value)
+
+    def expression_statement(self) -> Expression:
+        """Parse the contents of an expression statement from the token stream.
+
+        This method implements the rule
+            exprStmt -> expression ";"
+        """
+        value = self.expression()
+        self.consume(TokenType.SEMICOLON, "Expect ';' after expression.")
+        return Expression(value)
+
     def expression(self) -> Expr:
+        """Parse the next expression in the token stream.
+
+        This method implements the rule
+            expression -> equality
+        """
         return self.equality()
 
     def equality(self) -> Expr:
+        """Parse an equality expression from the token stream.
+
+        This method implements the rule
+            equality -> comparison (("==" | "!=") comparison)*
+        """
         expr = self.comparison()
         while self.match(TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL):
             operator = self.previous()
@@ -96,6 +147,11 @@ class Parser:
         return expr
 
     def comparison(self) -> Expr:
+        """Parse a comparison expression from the token stream.
+
+        This method implements the rule
+            comparison -> term ((">", ">=", "<", "<=" term)*
+        """
         expr = self.term()
         while self.match(
             TokenType.LESS,
@@ -110,6 +166,11 @@ class Parser:
         return expr
 
     def term(self) -> Expr:
+        """Parse an addition expression from the token stream.
+
+        This method implements the rule
+            term -> factor (("+", "-") factor)*
+        """
         expr = self.factor()
         while self.match(TokenType.PLUS, TokenType.MINUS):
             operator = self.previous()
@@ -119,6 +180,11 @@ class Parser:
         return expr
 
     def factor(self) -> Expr:
+        """Parse a multiplication expression from the token stream.
+
+        This method implements the rule
+            factor -> unary (("*", "/") unary)*
+        """
         expr = self.unary()
         while self.match(TokenType.STAR, TokenType.SLASH):
             operator = self.previous()
@@ -128,6 +194,11 @@ class Parser:
         return expr
 
     def unary(self) -> Expr:
+        """Parse a unary expression from the token stream.
+
+        This method implements the rule
+            unary -> ("!", "-")* primary
+        """
         if self.match(TokenType.BANG, TokenType.MINUS):
             operator = self.previous()
             right = self.unary()
@@ -136,6 +207,11 @@ class Parser:
         return self.primary()
 
     def primary(self) -> Expr:
+        """Parse a primary expression from the front of the token stream.
+
+        This method implements the rule
+            primary -> nil | bool | number | string | grouping
+        """
         if self.match(TokenType.FALSE):
             return Literal(False)
         if self.match(TokenType.TRUE):

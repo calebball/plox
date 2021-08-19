@@ -8,9 +8,7 @@ from plox.expressions import Binary, Literal, Unary
 from plox.parser import Parser
 from plox.tokens import Token, TokenType
 
-
-def add_terminator(tokens: List[Token]) -> List[Token]:
-    return tokens + [Token(TokenType.EOF, "", None, 0)]
+from tests.utilities import add_terminator
 
 
 equality_operators = [
@@ -57,7 +55,7 @@ def test_parsing_non_group_primary_expressions(token: Token):
     Arguments:
         token: the primary token that we're going to parse.
     """
-    assert Parser(add_terminator([token])).parse() == Literal(token.literal)
+    assert Parser(add_terminator([token])).expression() == Literal(token.literal)
 
 
 @pytest.mark.parametrize(
@@ -82,7 +80,7 @@ def test_parsing_basic_unary_expressions(tokens: List[Token]):
         tokens: the token stream that should generate the expression. This
             stream does not include the terminating EOF token.
     """
-    assert Parser(add_terminator(tokens)).parse() == Unary(
+    assert Parser(add_terminator(tokens)).expression() == Unary(
         tokens[0], Literal(tokens[1].literal)
     )
 
@@ -108,7 +106,7 @@ def test_parsing_basic_binary_expressions(operator: Token):
             Token(TokenType.NUMBER, "3.14159", 3.14159, 0),
         ]
     )
-    assert Parser(tokens).parse() == Binary(
+    assert Parser(tokens).expression() == Binary(
         Literal(tokens[0].literal), tokens[1], Literal(tokens[2].literal)
     )
 
@@ -145,7 +143,7 @@ def test_binary_expressions_are_left_associativity(
             Token(TokenType.NUMBER, "3", 3, 0),
         ]
     )
-    assert Parser(tokens).parse() == Binary(
+    assert Parser(tokens).expression() == Binary(
         Binary(Literal(1), left_operator, Literal(2)), right_operator, Literal(3)
     )
 
@@ -173,7 +171,7 @@ def test_unary_expressions_are_right_associative(
             Token(TokenType.NUMBER, "1", 1, 0),
         ]
     )
-    assert Parser(tokens).parse() == Unary(
+    assert Parser(tokens).expression() == Unary(
         left_operator, Unary(right_operator, Literal(1))
     )
 
@@ -207,7 +205,7 @@ def test_higher_then_lower_precedence_binary_expressions(
             Token(TokenType.NUMBER, "3", 3, 0),
         ]
     )
-    assert Parser(tokens).parse() == Binary(
+    assert Parser(tokens).expression() == Binary(
         Binary(Literal(1), left_operator, Literal(2)), right_operator, Literal(3)
     )
 
@@ -241,7 +239,7 @@ def test_lower_then_higher_precedence_binary_expressions(
             Token(TokenType.NUMBER, "3", 3, 0),
         ]
     )
-    assert Parser(tokens).parse() == Binary(
+    assert Parser(tokens).expression() == Binary(
         Literal(1), left_operator, Binary(Literal(2), right_operator, Literal(3))
     )
 
@@ -279,7 +277,7 @@ def test_unary_expressions_are_higher_precedence_than_binary(
             Token(TokenType.NUMBER, "2", 2, 0),
         ]
     )
-    assert Parser(tokens).parse() == Binary(
+    assert Parser(tokens).expression() == Binary(
         Unary(left_unary, Literal(1)),
         binary_operator,
         Unary(right_unary, Literal(2)),
