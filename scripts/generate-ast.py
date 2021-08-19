@@ -27,6 +27,7 @@ with open(args.class_spec, "r") as data_file:
 
 
 extra_imports = defaultdict(set)
+extra_imports["plox.tokens"].add("Token")
 for child, attributes in class_spec["children"].items():
     for attr_name, type_name in attributes.items():
         if "." in type_name:
@@ -41,9 +42,7 @@ stdlib_imports = [
 external_imports = [
     "from attr import define",
 ]
-plox_imports = [
-    "from plox.tokens import Token",
-]
+plox_imports = []
 
 for path, names in extra_imports.items():
     if "plox" in path:
