@@ -3,15 +3,10 @@ from typing import List, Optional
 from attr import define, field
 
 from plox.cli import Plox
-from plox.expressions import Binary, Expr, Grouping, Literal, Unary
-from plox.statements import Expression, Print, Stmt
+from plox.errors import LoxParseError
+from plox.expressions import Binary, Expr, Grouping, Literal, Unary, Variable
+from plox.statements import Expression, Print, Stmt, Var
 from plox.tokens import Token, TokenType
-
-
-class ParseError(Exception):
-    def __init__(self, token: Token, message: str):
-        self.token = token
-        super(ParseError, self).__init__(message)
 
 
 @define
@@ -30,7 +25,7 @@ class Parser:
         """
         statements = []
         while not self.is_at_end:
-            statements.append(self.statement())
+            statements.append(self.declaration())
         return statements
 
     @property
@@ -69,9 +64,9 @@ class Parser:
 
         raise self.error(self.peek(), message)
 
-    def error(self, token: Token, message: str) -> ParseError:
+    def error(self, token: Token, message: str) -> LoxParseError:
         Plox.error(token.line, message, token)
-        return ParseError(token, message)
+        return LoxParseError(token, message)
 
     def synchronise(self):
         self.advance()
@@ -91,6 +86,36 @@ class Parser:
                 return
 
         self.advance()
+
+    def declaration(self) -> Optional[Stmt]:
+        """Parse the next declaration from the token stream.
+
+        This method implements the rule
+            declaration -> varDecl
+                        |  statement
+        """
+        try:
+            if self.match(TokenType.VAR):
+                return self.var_declaration()
+            return self.statement()
+
+        except LoxParseError:
+            self.synchronise()
+
+    def var_declaration(self) -> Stmt:
+        """Parse the next variable declaration from the token stream.
+
+        This method implements the rule
+            varDecl -> identifier ("=" expression)? ";"
+        """
+        name = self.consume(TokenType.IDENTIFIER, "Expect variable name.")
+        initialiser = None
+        if self.match(TokenType.EQUAL):
+            initialiser = self.expression()
+
+        stmt = Var(name, initialiser)
+        self.consume(TokenType.SEMICOLON, "Expect ';' after declaration.")
+        return stmt
 
     def statement(self) -> Stmt:
         """Parse the next statement from the token stream.
@@ -224,5 +249,7 @@ class Parser:
             expr = self.expression()
             self.consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
             return Grouping(expr)
+        if self.match(TokenType.IDENTIFIER):
+            return Variable(self.previous())
 
         raise self.error(self.peek(), "Expect expression.")

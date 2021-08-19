@@ -4,7 +4,7 @@ from typing import List
 import pytest
 from hypothesis import given, strategies as st
 
-from plox.expressions import Binary, Literal, Unary
+from plox.expressions import Binary, Literal, Unary, Variable
 from plox.parser import Parser
 from plox.tokens import Token, TokenType
 
@@ -50,12 +50,32 @@ unary_operators = [
     ],
 )
 def test_parsing_non_group_primary_expressions(token: Token):
-    """Tests that we can parse a primary expression that is not a grouping.
+    """Tests that we can parse a primary expression that is not a grouping or a
+    variable reference.
 
     Arguments:
         token: the primary token that we're going to parse.
     """
     assert Parser(add_terminator([token])).expression() == Literal(token.literal)
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        Token(TokenType.IDENTIFIER, "foo", None, 0),
+        Token(TokenType.IDENTIFIER, "bar", None, 0),
+        Token(TokenType.IDENTIFIER, "b4z", None, 0),
+        Token(TokenType.IDENTIFIER, "CaMeL", None, 0),
+    ],
+)
+def test_parsing_variable_primary_expressions(token: Token):
+    """Tests that we can parse a primary expression that contains a variable
+    reference.
+
+    Arguments:
+        token: the primary token that we're going to parse.
+    """
+    assert Parser(add_terminator([token])).expression() == Variable(token)
 
 
 @pytest.mark.parametrize(
