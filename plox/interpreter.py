@@ -5,7 +5,16 @@ from attr import define, field
 from plox.cli import Plox
 from plox.environment import Environment
 from plox.errors import LoxRuntimeError
-from plox.expressions import Binary, Expr, ExprVisitor, Grouping, Literal, Unary, Variable
+from plox.expressions import (
+    Assign,
+    Binary,
+    Expr,
+    ExprVisitor,
+    Grouping,
+    Literal,
+    Unary,
+    Variable,
+)
 from plox.statements import Expression, Print, Stmt, StmtVisitor, Var
 from plox.tokens import Token, TokenType
 
@@ -35,6 +44,11 @@ class Interpreter(ExprVisitor, StmtVisitor):
     def visit_print(self, stmt: Print) -> None:
         value = self.evaluate(stmt.expression)
         print(self.stringify(value))
+
+    def visit_assign(self, expr: Assign) -> Any:
+        value = self.evaluate(expr.value)
+        self.environment.assign(expr.name, value)
+        return value
 
     def visit_binary(self, expr: Binary) -> Any:
         left = self.evaluate(expr.left)

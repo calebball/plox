@@ -18,3 +18,10 @@ class Environment:
             return self.values[name.lexeme]
 
         raise LoxRuntimeError(name, f"Undefined variable '{name.lexeme}'.")
+
+    def assign(self, name: Token, value: Any):
+        if name.lexeme in self.values:
+            self.values[name.lexeme] = value
+            return
+
+        raise LoxRuntimeError(name, f"Undefined variable '{name.lexeme}'.")

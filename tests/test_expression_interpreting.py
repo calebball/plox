@@ -5,7 +5,7 @@ import pytest
 from hypothesis import assume, given, strategies as st
 
 from plox.environment import Environment
-from plox.expressions import Binary, Literal, Unary, Variable
+from plox.expressions import Assign, Binary, Expr, Literal, Unary, Variable
 from plox.errors import LoxRuntimeError
 from plox.interpreter import Interpreter
 from plox.tokens import Token, TokenType
@@ -385,3 +385,29 @@ def test_evaluating_uninitialised_variable_raise_error(name: str):
     expr = Variable(Token(TokenType.IDENTIFIER, name, None, 0))
     with pytest.raises(LoxRuntimeError):
         expr.accept(Interpreter())
+
+
+@pytest.mark.parametrize(
+    "name, value, expected",
+    [
+        (Token(TokenType.IDENTIFIER, "foo", None, 0), Literal(1.0), 1.0),
+        (
+            Token(TokenType.IDENTIFIER, "foo", None, 0),
+            Binary(Literal(1.0), Token(TokenType.PLUS, "+", None, 0), Literal(2.0)),
+            3.0,
+        ),
+    ],
+)
+def test_assigning_values_to_global_variables(name: Token, value: Expr, expected: Any):
+    """Tests that we can correctly assign a new value to a previously declared
+    global variable.
+
+    Arguments:
+        name: the name of the variable that we assign to.
+        value: the value that we assign.
+    """
+    env = Environment()
+    env.define(name.lexeme, None)
+    expr = Assign(name, value)
+    assert expr.accept(Interpreter(env)) == expected
+    assert env.get(name) == expected
