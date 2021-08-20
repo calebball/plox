@@ -71,21 +71,38 @@ class Token:
 
     @classmethod
     def from_str(cls, string: str):
-        string_parts = string.split()
-        line = string_parts[0]
-        type = TokenType[string_parts[1]]
+        start = 0
+        current = 0
 
-        if not len(string_parts) > 2:
+        while not string[current].isspace():
+            current = current + 1
+
+        line = int(string[start:current])
+
+        current = current + 1
+        start = current
+
+        while not string[current].isspace():
+            current = current + 1
+
+        type = TokenType[string[start:current]]
+
+        start = current + 1
+        lexeme = string[start:-1]
+
+        if not lexeme:
             return cls(type, "", None, line)
 
-        lexeme = string_parts[2]
+        if type is TokenType.TRUE:
+            return cls(type, "true", True, line)
 
-        if not len(string_parts) > 3:
-            return cls(type, lexeme, None, line)
-
-        literal = string_parts[3]
+        if type is TokenType.FALSE:
+            return cls(type, "false", False, line)
 
         if type is TokenType.NUMBER:
-            literal = float(literal)
+            return cls(type, lexeme, float(lexeme), line)
 
-        return cls(type, lexeme, literal, line)
+        if type is TokenType.STRING:
+            return cls(type, f'"{lexeme}"', lexeme, line)
+
+        return cls(type, lexeme, None, line)

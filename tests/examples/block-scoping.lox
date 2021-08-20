@@ -1,0 +1,21 @@
+// A short example given at the end of chapter 8 to show off the newly added
+// lexical scoping with block statements.
+var a = "global a";
+var b = "global b";
+var c = "global c";
+{
+  var a = "outer a";
+  var b = "outer b";
+  {
+    var a = "inner a";
+    print a;
+    print b;
+    print c;
+  }
+  print a;
+  print b;
+  print c;
+}
+print a;
+print b;
+print c;
