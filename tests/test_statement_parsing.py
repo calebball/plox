@@ -6,7 +6,7 @@ from hypothesis import given, strategies as st
 from plox.expressions import Binary, Expr, Literal
 from plox.parser import Parser
 from plox.scanner import keywords
-from plox.statements import Expression, Print, Var
+from plox.statements import Block, Expression, Print, Var
 from plox.tokens import Token, TokenType
 
 from tests.utilities import add_terminator
@@ -167,3 +167,38 @@ def test_parsing_initialised_variable_declarations(
     expr = Parser(expr_tokens).expression()
     assert len(statements) == 1
     assert statements[0] == Var(tokens[1], expr)
+
+
+@pytest.mark.parametrize(
+    "tokens, expr",
+    [
+        ([Token(TokenType.NUMBER, "1", 1.0, 0), Token(TokenType.SEMICOLON, ";", None, 0)], Expression(Literal(1.0))),
+        (
+            [
+                Token(TokenType.NUMBER, "1", 1.0, 0),
+                Token(TokenType.PLUS, "+", None, 0),
+                Token(TokenType.NUMBER, "2", 2.0, 0),
+                Token(TokenType.SEMICOLON, ";", None, 0),
+            ],
+            Expression(Binary(Literal(1.0), Token(TokenType.PLUS, "+", None, 0), Literal(2.0))),
+        ),
+    ],
+)
+def test_parsing_block_statements_with_a_single_expression(
+    tokens: List[Token], expr: Expr
+):
+    """Tests that if we can parse an expression statement wrapped in a block
+    correctly.
+
+    Arguments:
+        tokens: the list of tokens that creates the expression.
+        expr: the expected expression.
+    """
+    tokens = add_terminator(
+        [
+            Token(TokenType.LEFT_BRACE, "{", None, 0),
+            *tokens,
+            Token(TokenType.RIGHT_BRACE, "}", None, 0),
+        ]
+    )
+    assert Parser(tokens).parse() == [Block([expr])]

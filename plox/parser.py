@@ -1,11 +1,11 @@
-from typing import List, Optional
+from typing import List
 
 from attr import define, field
 
 from plox.cli import Plox
 from plox.errors import LoxParseError
 from plox.expressions import Assign, Binary, Expr, Grouping, Literal, Unary, Variable
-from plox.statements import Expression, Print, Stmt, Var
+from plox.statements import Block, Expression, Print, Stmt, Var
 from plox.tokens import Token, TokenType
 
 
@@ -70,7 +70,7 @@ class Parser:
 
     def synchronise(self):
         self.advance()
-        while not self.is_at_end():
+        while not self.is_at_end:
             if self.previous().type is TokenType.SEMICOLON:
                 return
 
@@ -87,7 +87,7 @@ class Parser:
 
         self.advance()
 
-    def declaration(self) -> Optional[Stmt]:
+    def declaration(self) -> Stmt:
         """Parse the next declaration from the token stream.
 
         This method implements the rule
@@ -123,9 +123,16 @@ class Parser:
         This method implements the rule
             statement   -> exprStmt
                         |  printStmt
+                        |  block
+
+        The block branch wraps the list of statements in a Block object in this
+        method, which is to keep a bit of flexibility later on.
         """
         if self.match(TokenType.PRINT):
             return self.print_statement()
+
+        if self.match(TokenType.LEFT_BRACE):
+            return Block(self.block())
 
         return self.expression_statement()
 
@@ -138,6 +145,23 @@ class Parser:
         value = self.expression()
         self.consume(TokenType.SEMICOLON, "Expect ';' after value.")
         return Print(value)
+
+    def block(self) -> List[Stmt]:
+        """Parse the contents of a block statement from the token stream.
+
+        This method implements the rule
+            block -> "{" declaration "}"
+
+        Mostly, at least. We expect the left brace to have been consumed from
+        the stream at this point.
+        """
+        statements = []
+
+        while not self.check(TokenType.RIGHT_BRACE) and not self.is_at_end:
+            statements.append(self.declaration())
+
+        self.consume(TokenType.RIGHT_BRACE, "Expect '}' after block.")
+        return statements
 
     def expression_statement(self) -> Expression:
         """Parse the contents of an expression statement from the token stream.

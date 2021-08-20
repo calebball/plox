@@ -1,6 +1,9 @@
 {
   "parent": "Stmt",
   "children": {
+    "Block": {
+        "statements": "Stmt"
+    },
     "Expression": {
       "expression": "plox.expressions.Expr"
     },

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import List, Optional
 
 from attr import define
 
@@ -10,6 +10,14 @@ from plox.tokens import Token
 class Stmt:
     def accept(self, visitor: "StmtVisitor"):
         ...
+
+
+@define
+class Block(Stmt):
+    statements: List[Stmt]
+
+    def accept(self, visitor: "StmtVisitor"):
+        return visitor.visit_block(self)
 
 
 @define
@@ -38,6 +46,10 @@ class Var(Stmt):
 
 
 class StmtVisitor(ABC):
+    @abstractmethod
+    def visit_block(self, expr: Block):
+        ...
+
     @abstractmethod
     def visit_expression(self, expr: Expression):
         ...

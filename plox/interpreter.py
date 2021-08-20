@@ -15,7 +15,7 @@ from plox.expressions import (
     Unary,
     Variable,
 )
-from plox.statements import Expression, Print, Stmt, StmtVisitor, Var
+from plox.statements import Block, Expression, Print, Stmt, StmtVisitor, Var
 from plox.tokens import Token, TokenType
 
 
@@ -44,6 +44,9 @@ class Interpreter(ExprVisitor, StmtVisitor):
     def visit_print(self, stmt: Print) -> None:
         value = self.evaluate(stmt.expression)
         print(self.stringify(value))
+
+    def visit_block(self, stmt: Block) -> None:
+        self.execute_block(stmt.statements, Environment(self.environment))
 
     def visit_assign(self, expr: Assign) -> Any:
         value = self.evaluate(expr.value)
@@ -120,6 +123,17 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def execute(self, stmt: Stmt) -> None:
         return stmt.accept(self)
+
+    def execute_block(self, statements: List[Stmt], environment: Environment) -> None:
+        previous = self.environment
+        try:
+            self.environment = environment
+
+            for stmt in statements:
+                self.execute(stmt)
+
+        finally:
+            self.environment = previous
 
     def evaluate(self, expr: Expr) -> Any:
         return expr.accept(self)
