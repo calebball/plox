@@ -3,9 +3,9 @@ from typing import Any
 import pytest
 
 from plox.environment import Environment
-from plox.expressions import Binary, Expr, Literal
+from plox.expressions import Assign, Binary, Expr, Literal
 from plox.interpreter import Interpreter
-from plox.statements import Expression, Print, Var
+from plox.statements import Expression, If, Print, Var
 from plox.tokens import Token, TokenType
 
 
@@ -107,3 +107,34 @@ def test_interpreting_initialised_variable_declarations(
     env = Environment()
     stmt.accept(Interpreter(env))
     assert env.get(identifier) == expected
+
+
+@pytest.mark.parametrize(
+    "stmt, value",
+    [
+        (
+            If(
+                Literal(True),
+                Expression(
+                    Assign(Token(TokenType.IDENTIFIER, "foo", None, 0), Literal("bar"))
+                ),
+                Expression(
+                    Assign(Token(TokenType.IDENTIFIER, "foo", None, 0), Literal("baz"))
+                ),
+            ),
+            "bar",
+        ),
+    ],
+)
+def test_evaluating_if_statements_with_else_clause(stmt: If, value: Any):
+    """Tests that we evaluate an if statement correctly by observing the value
+    assigned to the variable `foo`.
+
+    Arguments:
+        stmt: the if statement that we'll evaluate.
+        value: the expected value of `foo` after that statement is evaluated.
+    """
+    env = Environment()
+    env.define("foo", None)
+    stmt.accept(Interpreter(env))
+    assert env.get(Token(TokenType.IDENTIFIER, "foo", None, 0)) == value

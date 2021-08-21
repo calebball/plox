@@ -7,6 +7,11 @@
     "Expression": {
       "expression": "plox.expressions.Expr"
     },
+    "If": {
+      "condition": "plox.expressions.Expr",
+      "then_branch": "Stmt",
+      "else_branch": "Stmt"
+    },
     "Print": {
       "expression": "plox.expressions.Expr"
     },

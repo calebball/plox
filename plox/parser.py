@@ -5,7 +5,7 @@ from attr import define, field
 from plox.cli import Plox
 from plox.errors import LoxParseError
 from plox.expressions import Assign, Binary, Expr, Grouping, Literal, Unary, Variable
-from plox.statements import Block, Expression, Print, Stmt, Var
+from plox.statements import Block, Expression, If, Print, Stmt, Var
 from plox.tokens import Token, TokenType
 
 
@@ -122,12 +122,16 @@ class Parser:
 
         This method implements the rule
             statement   -> exprStmt
+                        |  ifStmt
                         |  printStmt
                         |  block
 
         The block branch wraps the list of statements in a Block object in this
         method, which is to keep a bit of flexibility later on.
         """
+        if self.match(TokenType.IF):
+            return self.if_statement()
+
         if self.match(TokenType.PRINT):
             return self.print_statement()
 
@@ -135,6 +139,24 @@ class Parser:
             return Block(self.block())
 
         return self.expression_statement()
+
+    def if_statement(self) -> If:
+        """Parse the contents of an if statement from the token stream.
+
+        This method implements the rule
+            ifStmt -> "if" "(" expression ")" statement ( "else" statement )? ;
+        """
+        self.consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.")
+        condition = self.expression()
+
+        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after if condition.")
+        then_branch = self.statement()
+        else_branch = None
+
+        if self.match(TokenType.ELSE):
+            else_branch = self.statement()
+
+        return If(condition, then_branch, else_branch)
 
     def print_statement(self) -> Print:
         """Parse the contents of a print statement from the token stream.

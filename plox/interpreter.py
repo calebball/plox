@@ -15,7 +15,7 @@ from plox.expressions import (
     Unary,
     Variable,
 )
-from plox.statements import Block, Expression, Print, Stmt, StmtVisitor, Var
+from plox.statements import Block, Expression, If, Print, Stmt, StmtVisitor, Var
 from plox.tokens import Token, TokenType
 
 
@@ -40,6 +40,13 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def visit_expression(self, stmt: Expression) -> None:
         self.evaluate(stmt.expression)
+
+    def visit_if(self, stmt: If) -> None:
+        if self.evaluate(stmt.condition):
+            self.execute(stmt.then_branch)
+
+        elif stmt.else_branch is not None:
+            self.execute(stmt.else_branch)
 
     def visit_print(self, stmt: Print) -> None:
         value = self.evaluate(stmt.expression)

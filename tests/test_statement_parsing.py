@@ -3,10 +3,10 @@ from typing import List
 import pytest
 from hypothesis import given, strategies as st
 
-from plox.expressions import Binary, Expr, Literal
+from plox.expressions import Assign, Binary, Expr, Literal
 from plox.parser import Parser
 from plox.scanner import keywords
-from plox.statements import Block, Expression, Print, Var
+from plox.statements import Block, Expression, If, Print, Var
 from plox.tokens import Token, TokenType
 
 from tests.utilities import add_terminator
@@ -172,7 +172,13 @@ def test_parsing_initialised_variable_declarations(
 @pytest.mark.parametrize(
     "tokens, expr",
     [
-        ([Token(TokenType.NUMBER, "1", 1.0, 0), Token(TokenType.SEMICOLON, ";", None, 0)], Expression(Literal(1.0))),
+        (
+            [
+                Token(TokenType.NUMBER, "1", 1.0, 0),
+                Token(TokenType.SEMICOLON, ";", None, 0),
+            ],
+            Expression(Literal(1.0)),
+        ),
         (
             [
                 Token(TokenType.NUMBER, "1", 1.0, 0),
@@ -180,7 +186,9 @@ def test_parsing_initialised_variable_declarations(
                 Token(TokenType.NUMBER, "2", 2.0, 0),
                 Token(TokenType.SEMICOLON, ";", None, 0),
             ],
-            Expression(Binary(Literal(1.0), Token(TokenType.PLUS, "+", None, 0), Literal(2.0))),
+            Expression(
+                Binary(Literal(1.0), Token(TokenType.PLUS, "+", None, 0), Literal(2.0))
+            ),
         ),
     ],
 )
@@ -202,3 +210,111 @@ def test_parsing_block_statements_with_a_single_expression(
         ]
     )
     assert Parser(tokens).parse() == [Block([expr])]
+
+
+@pytest.mark.parametrize(
+    "tokens, condition, then_branch",
+    [
+        (
+            [
+                Token(TokenType.IF, "if", None, 0),
+                Token(TokenType.LEFT_PAREN, "(", None, 0),
+                Token(TokenType.TRUE, "true", None, 0),
+                Token(TokenType.RIGHT_PAREN, ")", None, 0),
+                Token(TokenType.NIL, "nil", None, 0),
+                Token(TokenType.SEMICOLON, ";", None, 0),
+            ],
+            Literal(True),
+            Expression(Literal(None)),
+        ),
+    ],
+)
+def test_parsing_if_statements_with_no_else_clause(
+    tokens: List[Token], condition: Expr, then_branch: Expr
+):
+    """Tests that we can parse an if statement with no else clause.
+
+    Arguments:
+        tokens: the token stream that generates the if statement.
+        condition: the expression expected as the if conditional.
+        then_branch: the expression expected in the body of the if statement.
+    """
+    tokens = add_terminator(tokens)
+    assert Parser(tokens).parse() == [If(condition, then_branch, None)]
+
+
+@pytest.mark.parametrize(
+    "tokens, condition, then_branch, else_branch",
+    [
+        (
+            [
+                Token(TokenType.IF, "if", None, 0),
+                Token(TokenType.LEFT_PAREN, "(", None, 0),
+                Token(TokenType.TRUE, "true", None, 0),
+                Token(TokenType.RIGHT_PAREN, ")", None, 0),
+                Token(TokenType.IDENTIFIER, "foo", None, 0),
+                Token(TokenType.EQUAL, "=", None, 0),
+                Token(TokenType.STRING, '"bar"', "bar", 0),
+                Token(TokenType.SEMICOLON, ";", None, 0),
+                Token(TokenType.ELSE, "else", None, 0),
+                Token(TokenType.IDENTIFIER, "foo", None, 0),
+                Token(TokenType.EQUAL, "=", None, 0),
+                Token(TokenType.STRING, '"baz"', "baz", 0),
+                Token(TokenType.SEMICOLON, ";", None, 0),
+            ],
+            Literal(True),
+            Expression(
+                Assign(Token(TokenType.IDENTIFIER, "foo", None, 0), Literal("bar"))
+            ),
+            Expression(
+                Assign(Token(TokenType.IDENTIFIER, "foo", None, 0), Literal("baz"))
+            ),
+        ),
+    ],
+)
+def test_parsing_if_statements_with_else_clause(
+    tokens: List[Token], condition: Expr, then_branch: Expr, else_branch: Expr
+):
+    """Tests that we can parse an if statement with an else clause.
+
+    Arguments:
+        tokens: the token stream that generates the if statement.
+        condition: the expression expected as the if conditional.
+        then_branch: the expression expected as the then statement.
+        else_branch: the expression expected as the else statement.
+    """
+    tokens = add_terminator(tokens)
+    assert Parser(tokens).parse() == [If(condition, then_branch, else_branch)]
+
+
+def test_parsing_nested_if_statements_with_else_clause():
+    """Tests that we parse two if tokens follwed by a single else token in the
+    correct way.
+
+    This is defined outside of the grammar as the else token binding to the
+    nearest if token.
+    """
+    tokens = add_terminator(
+        [
+            Token(TokenType.IF, "if", None, 0),
+            Token(TokenType.LEFT_PAREN, "(", None, 0),
+            Token(TokenType.TRUE, "true", None, 0),
+            Token(TokenType.RIGHT_PAREN, ")", None, 0),
+            Token(TokenType.IF, "if", None, 0),
+            Token(TokenType.LEFT_PAREN, "(", None, 0),
+            Token(TokenType.TRUE, "true", None, 0),
+            Token(TokenType.RIGHT_PAREN, ")", None, 0),
+            Token(TokenType.NUMBER, "1", 1.0, 0),
+            Token(TokenType.SEMICOLON, ";", None, 0),
+            Token(TokenType.ELSE, "else", None, 0),
+            Token(TokenType.NUMBER, "1", 1.0, 0),
+            Token(TokenType.SEMICOLON, ";", None, 0),
+        ]
+    )
+    assert Parser(tokens).parse() == [
+        If(
+            Literal(True),
+            If(Literal(True), Expression(Literal(1.0)), Expression(Literal(1.0))),
+            None,
+        )
+    ]

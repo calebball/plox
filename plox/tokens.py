@@ -40,7 +40,7 @@ class TokenType(enum.Enum):
     FALSE = enum.auto()
     FUN = enum.auto()
     FOR = enum.auto()
-    IT = enum.auto()
+    IF = enum.auto()
     NIL = enum.auto()
     OR = enum.auto()
     PRINT = enum.auto()

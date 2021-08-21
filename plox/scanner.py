@@ -29,7 +29,7 @@ keywords = {
     "false": TokenType.FALSE,
     "fun": TokenType.FUN,
     "for": TokenType.FOR,
-    "it": TokenType.IT,
+    "if": TokenType.IF,
     "nil": TokenType.NIL,
     "or": TokenType.OR,
     "print": TokenType.PRINT,

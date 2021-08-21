@@ -29,6 +29,16 @@ class Expression(Stmt):
 
 
 @define
+class If(Stmt):
+    condition: Expr
+    then_branch: Stmt
+    else_branch: Optional[Stmt]
+
+    def accept(self, visitor: "StmtVisitor"):
+        return visitor.visit_if(self)
+
+
+@define
 class Print(Stmt):
     expression: Expr
 
@@ -52,6 +62,10 @@ class StmtVisitor(ABC):
 
     @abstractmethod
     def visit_expression(self, expr: Expression):
+        ...
+
+    @abstractmethod
+    def visit_if(self, expr: If):
         ...
 
     @abstractmethod
