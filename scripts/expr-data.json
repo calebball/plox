@@ -16,6 +16,11 @@
     "Literal": {
       "value": "typing.Any"
     },
+    "Logical": {
+      "left": "Expr",
+      "operator": "plox.tokens.Token",
+      "right": "Expr"
+    },
     "Unary": {
       "operator": "plox.tokens.Token",
       "right": "Expr"

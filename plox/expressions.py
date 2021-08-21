@@ -47,6 +47,16 @@ class Literal(Expr):
 
 
 @define
+class Logical(Expr):
+    left: Expr
+    operator: Token
+    right: Expr
+
+    def accept(self, visitor: "ExprVisitor"):
+        return visitor.visit_logical(self)
+
+
+@define
 class Unary(Expr):
     operator: Token
     right: Expr
@@ -78,6 +88,10 @@ class ExprVisitor(ABC):
 
     @abstractmethod
     def visit_literal(self, expr: Literal):
+        ...
+
+    @abstractmethod
+    def visit_logical(self, expr: Logical):
         ...
 
     @abstractmethod

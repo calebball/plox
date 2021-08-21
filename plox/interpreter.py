@@ -12,6 +12,7 @@ from plox.expressions import (
     ExprVisitor,
     Grouping,
     Literal,
+    Logical,
     Unary,
     Variable,
 )
@@ -59,6 +60,14 @@ class Interpreter(ExprVisitor, StmtVisitor):
         value = self.evaluate(expr.value)
         self.environment.assign(expr.name, value)
         return value
+
+    def visit_logical(self, expr: Logical) -> Any:
+        result = self.evaluate(expr.left)
+        if (expr.operator.type is TokenType.AND and self.is_truthy(result)) or (
+            expr.operator.type is TokenType.OR and not self.is_truthy(result)
+        ):
+            result = self.evaluate(expr.right)
+        return result
 
     def visit_binary(self, expr: Binary) -> Any:
         left = self.evaluate(expr.left)

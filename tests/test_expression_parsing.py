@@ -4,7 +4,7 @@ from typing import List
 import pytest
 from hypothesis import given, strategies as st
 
-from plox.expressions import Assign, Binary, Literal, Unary, Variable
+from plox.expressions import Assign, Binary, Expr, Literal, Logical, Unary, Variable
 from plox.parser import Parser
 from plox.tokens import Token, TokenType
 
@@ -340,3 +340,86 @@ def test_assignment_to_literal_expressions(identifier: Token, literal: Token):
         ]
     )
     assert Parser(tokens).expression() == Assign(identifier, Literal(literal.literal))
+
+
+@pytest.mark.parametrize(
+    "tokens, expected",
+    [
+        (
+            [
+                Token(TokenType.TRUE, "true", True, 0),
+                Token(TokenType.AND, "and", None, 0),
+                Token(TokenType.FALSE, "false", None, 0),
+            ],
+            Logical(
+                Literal(True), Token(TokenType.AND, "and", None, 0), Literal(False)
+            ),
+        ),
+        (
+            [
+                Token(TokenType.TRUE, "true", True, 0),
+                Token(TokenType.OR, "or", None, 0),
+                Token(TokenType.FALSE, "false", None, 0),
+            ],
+            Logical(Literal(True), Token(TokenType.OR, "or", None, 0), Literal(False)),
+        ),
+    ],
+)
+def test_parsing_binary_logical_operators(tokens: List[Token], expected: Expr):
+    """Tests that we can parse an isolated binary logical operator (i.e. an
+    `and` or an `or`.)
+
+    Arguments:
+        tokens: the sequence of tokens that we'll parse.
+        expected: the binary logical expression we're expecting.
+    """
+    tokens = add_terminator(tokens)
+    assert Parser(tokens).expression() == expected
+
+
+@pytest.mark.parametrize(
+    "tokens, expected",
+    [
+        (
+            [
+                Token(TokenType.TRUE, "true", None, 0),
+                Token(TokenType.AND, "and", None, 0),
+                Token(TokenType.FALSE, "false", None, 0),
+                Token(TokenType.OR, "or", None, 0),
+                Token(TokenType.TRUE, "true", None, 0),
+            ],
+            Logical(
+                Logical(
+                    Literal(True), Token(TokenType.AND, "and", None, 0), Literal(False)
+                ),
+                Token(TokenType.OR, "or", None, 0),
+                Literal(True),
+            ),
+        ),
+        (
+            [
+                Token(TokenType.TRUE, "true", None, 0),
+                Token(TokenType.OR, "or", None, 0),
+                Token(TokenType.FALSE, "false", None, 0),
+                Token(TokenType.AND, "and", None, 0),
+                Token(TokenType.TRUE, "true", None, 0),
+            ],
+            Logical(
+                Literal(True),
+                Token(TokenType.OR, "or", None, 0),
+                Logical(
+                    Literal(False), Token(TokenType.AND, "and", None, 0), Literal(True)
+                ),
+            ),
+        ),
+    ],
+)
+def test_binary_logical_operator_precedence(tokens: List[Token], expected: Expr):
+    """Tests that `and` operators have higher precedence than `or` operators.
+
+    Arguments:
+        tokens: the sequence of tokens that we'll parse.
+        expected: the expected result of the parser.
+    """
+    tokens = add_terminator(tokens)
+    assert Parser(tokens).expression() == expected

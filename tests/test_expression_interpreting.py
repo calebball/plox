@@ -5,7 +5,7 @@ import pytest
 from hypothesis import assume, given, strategies as st
 
 from plox.environment import Environment
-from plox.expressions import Assign, Binary, Expr, Literal, Unary, Variable
+from plox.expressions import Assign, Binary, Expr, Literal, Logical, Unary, Variable
 from plox.errors import LoxRuntimeError
 from plox.interpreter import Interpreter
 from plox.tokens import Token, TokenType
@@ -411,3 +411,26 @@ def test_assigning_values_to_global_variables(name: Token, value: Expr, expected
     expr = Assign(name, value)
     assert expr.accept(Interpreter(env)) == expected
     assert env.get(name) == expected
+
+
+@pytest.mark.parametrize(
+    "expr, value",
+    [
+        (Logical(Literal(True), Token(TokenType.AND, "and", None, 0), Literal(True)), True),
+        (Logical(Literal(True), Token(TokenType.AND, "and", None, 0), Literal(False)), False),
+        (Logical(Literal(False), Token(TokenType.AND, "and", None, 0), Literal(True)), False),
+        (Logical(Literal(False), Token(TokenType.AND, "and", None, 0), Literal(False)), False),
+        (Logical(Literal(True), Token(TokenType.OR, "or", None, 0), Literal(True)), True),
+        (Logical(Literal(True), Token(TokenType.OR, "or", None, 0), Literal(False)), True),
+        (Logical(Literal(False), Token(TokenType.OR, "or", None, 0), Literal(True)), True),
+        (Logical(Literal(False), Token(TokenType.OR, "or", None, 0), Literal(False)), False),
+    ]
+)
+def test_interpreting_binary_logical_operators(expr: Logical, value: bool):
+    """Tests that we can correctly evlauate a logical operator.
+
+    Arguments:
+        expr: the logical expression we'll evaluate.
+        value: the expected result of the expression.
+    """
+    assert expr.accept(Interpreter()) is value

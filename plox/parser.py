@@ -4,7 +4,16 @@ from attr import define, field
 
 from plox.cli import Plox
 from plox.errors import LoxParseError
-from plox.expressions import Assign, Binary, Expr, Grouping, Literal, Unary, Variable
+from plox.expressions import (
+    Assign,
+    Binary,
+    Expr,
+    Grouping,
+    Literal,
+    Logical,
+    Unary,
+    Variable,
+)
 from plox.statements import Block, Expression, If, Print, Stmt, Var
 from plox.tokens import Token, TokenType
 
@@ -208,9 +217,9 @@ class Parser:
 
         This method implements the rule
             assignment  -> IDENTIFIER "=" assignment
-                        |  equality
+                        |  logic_or
         """
-        expr = self.equality()
+        expr = self.logic_or()
 
         if self.match(TokenType.EQUAL):
             equals = self.previous()
@@ -223,6 +232,36 @@ class Parser:
             Plox.error(equals.line, "Invalid assignment target.", equals)
 
         return expr
+
+    def logic_or(self) -> Expr:
+        """parse a logical or operator from the token stream.
+
+        this method implements the rule
+            logic_or -> logic_and ( "or" logic_and )* ;
+        """
+        left = self.logic_and()
+
+        while self.match(TokenType.OR):
+            operator = self.previous()
+            right = self.logic_and()
+            return Logical(left, operator, right)
+
+        return left
+
+    def logic_and(self) -> Expr:
+        """parse a logical or operator from the token stream.
+
+        this method implements the rule
+            logic_and -> equality ( "or" equality )* ;
+        """
+        left = self.equality()
+
+        while self.match(TokenType.AND):
+            operator = self.previous()
+            right = self.equality()
+            return Logical(left, operator, right)
+
+        return left
 
     def equality(self) -> Expr:
         """Parse an equality expression from the token stream.
