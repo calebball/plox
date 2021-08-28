@@ -14,7 +14,7 @@ from plox.expressions import (
     Unary,
     Variable,
 )
-from plox.statements import Block, Expression, If, Print, Stmt, Var
+from plox.statements import Block, Expression, If, Print, Stmt, Var, While
 from plox.tokens import Token, TokenType
 
 
@@ -133,6 +133,7 @@ class Parser:
             statement   -> exprStmt
                         |  ifStmt
                         |  printStmt
+                        |  whileStmt
                         |  block
 
         The block branch wraps the list of statements in a Block object in this
@@ -143,6 +144,9 @@ class Parser:
 
         if self.match(TokenType.PRINT):
             return self.print_statement()
+
+        if self.match(TokenType.WHILE):
+            return self.while_statement()
 
         if self.match(TokenType.LEFT_BRACE):
             return Block(self.block())
@@ -176,6 +180,18 @@ class Parser:
         value = self.expression()
         self.consume(TokenType.SEMICOLON, "Expect ';' after value.")
         return Print(value)
+
+    def while_statement(self) -> While:
+        """Parse the a while statement from the token stream.
+
+        This method implements the rule
+            whileStmt -> "while" "(" expression ")" statement ;
+        """
+        self.consume(TokenType.LEFT_PAREN, "Expect '(' after 'while'.")
+        condition = self.expression()
+        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after condition.")
+        body = self.statement()
+        return While(condition, body)
 
     def block(self) -> List[Stmt]:
         """Parse the contents of a block statement from the token stream.

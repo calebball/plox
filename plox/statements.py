@@ -55,6 +55,15 @@ class Var(Stmt):
         return visitor.visit_var(self)
 
 
+@define
+class While(Stmt):
+    condition: Expr
+    body: Stmt
+
+    def accept(self, visitor: "StmtVisitor"):
+        return visitor.visit_while(self)
+
+
 class StmtVisitor(ABC):
     @abstractmethod
     def visit_block(self, expr: Block):
@@ -74,4 +83,8 @@ class StmtVisitor(ABC):
 
     @abstractmethod
     def visit_var(self, expr: Var):
+        ...
+
+    @abstractmethod
+    def visit_while(self, expr: While):
         ...

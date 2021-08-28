@@ -18,6 +18,10 @@
     "Var": {
       "name": "plox.tokens.Token",
       "initialiser": "plox.expressions.Expr"
+    },
+    "While": {
+      "condition": "plox.expressions.Expr",
+      "body": "Stmt"
     }
   }
 }
