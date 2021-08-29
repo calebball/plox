@@ -174,7 +174,10 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def check_number_operands(self, operator: Token, *operands: List[Any]) -> None:
         if any(not isinstance(operand, float) for operand in operands):
-            raise LoxRuntimeError(operator, "Operand must be a number.")
+            if len(operands) > 1:
+                raise LoxRuntimeError(operator, "Operands must be numbers.")
+            else:
+                raise LoxRuntimeError(operator, "Operand must be a number.")
 
     def stringify(self, obj: Any) -> str:
         if obj is None:
