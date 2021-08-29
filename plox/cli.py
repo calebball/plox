@@ -80,7 +80,7 @@ class Plox:
 
     @classmethod
     def runtime_error(cls, error: LoxRuntimeError):
-        print(f"{error} + \n[line {error.token.line}]", file=sys.stderr)
+        print(f"{error}\n[line {error.token.line}]", file=sys.stderr)
         cls.HAD_RUNTIME_ERROR = True
 
 
