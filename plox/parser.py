@@ -131,6 +131,7 @@ class Parser:
 
         This method implements the rule
             statement   -> exprStmt
+                        |  forStmt
                         |  ifStmt
                         |  printStmt
                         |  whileStmt
@@ -139,6 +140,9 @@ class Parser:
         The block branch wraps the list of statements in a Block object in this
         method, which is to keep a bit of flexibility later on.
         """
+        if self.match(TokenType.FOR):
+            return self.for_statement()
+
         if self.match(TokenType.IF):
             return self.if_statement()
 
@@ -152,6 +156,52 @@ class Parser:
             return Block(self.block())
 
         return self.expression_statement()
+
+    def for_statement(self) -> Stmt:
+        """Parse a for statement from the token stream.
+
+        The statement is desugared into the equivalent while loop form. I.e. we
+        translate
+            for (init; cond; incr) { body; }
+        into
+            init;
+            while (cond) {
+                body;
+                incr;
+            }
+
+        This method implements the rule
+            forStmt -> "for" "(" ( varDecl | exprStmt | ";" )
+                        expression? ";" expression? ")" statement;
+        """
+        self.consume(TokenType.LEFT_PAREN, "Expect '(' after 'for'.")
+        if self.match(TokenType.SEMICOLON):
+            initialiser = None
+        elif self.match(TokenType.VAR):
+            initialiser = self.var_declaration()
+        else:
+            initialiser = self.expression_statement()
+
+        if not self.check(TokenType.SEMICOLON):
+            condition = self.expression()
+        else:
+            condition = Literal(True)
+        self.consume(TokenType.SEMICOLON, "Expect ';' after loop condition.")
+
+        if not self.check(TokenType.RIGHT_PAREN):
+            increment = self.expression()
+        else:
+            increment = None
+
+        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after increment.")
+
+        body = self.statement()
+        if increment is not None:
+            body = Block([body, Expression(increment)])
+        body = While(condition, body)
+        if initialiser is not None:
+            body = Block([initialiser, body])
+        return body
 
     def if_statement(self) -> If:
         """Parse the contents of an if statement from the token stream.
