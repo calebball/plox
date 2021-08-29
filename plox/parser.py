@@ -94,7 +94,7 @@ class Parser:
             ]:
                 return
 
-        self.advance()
+            self.advance()
 
     def declaration(self) -> Stmt:
         """Parse the next declaration from the token stream.
