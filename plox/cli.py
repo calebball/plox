@@ -20,7 +20,8 @@ class Plox:
         if len(args) == 1:
             cls.run_file(args[0])
 
-        cls.run_prompt()
+        else:
+            cls.run_prompt()
 
     @classmethod
     def run_file(cls, path: str):
