@@ -168,6 +168,8 @@ class Interpreter(ExprVisitor, StmtVisitor):
         return True
 
     def is_equal(self, left: Any, right: Any) -> bool:
+        if isinstance(left, bool) or isinstance(right, bool):
+            return left is right
         return left == right
 
     def check_number_operands(self, operator: Token, *operands: List[Any]) -> None:
