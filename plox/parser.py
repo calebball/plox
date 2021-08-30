@@ -305,14 +305,14 @@ class Parser:
         this method implements the rule
             logic_or -> logic_and ( "or" logic_and )* ;
         """
-        left = self.logic_and()
+        expr = self.logic_and()
 
         while self.match(TokenType.OR):
             operator = self.previous()
             right = self.logic_and()
-            return Logical(left, operator, right)
+            expr = Logical(expr, operator, right)
 
-        return left
+        return expr
 
     def logic_and(self) -> Expr:
         """parse a logical or operator from the token stream.
@@ -320,14 +320,14 @@ class Parser:
         this method implements the rule
             logic_and -> equality ( "or" equality )* ;
         """
-        left = self.equality()
+        expr = self.equality()
 
         while self.match(TokenType.AND):
             operator = self.previous()
             right = self.equality()
-            return Logical(left, operator, right)
+            expr = Logical(expr, operator, right)
 
-        return left
+        return expr
 
     def equality(self) -> Expr:
         """Parse an equality expression from the token stream.
