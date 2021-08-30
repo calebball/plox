@@ -43,7 +43,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
         self.evaluate(stmt.expression)
 
     def visit_if(self, stmt: If) -> None:
-        if self.evaluate(stmt.condition):
+        if self.is_truthy(self.evaluate(stmt.condition)):
             self.execute(stmt.then_branch)
 
         elif stmt.else_branch is not None:
