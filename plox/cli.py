@@ -67,7 +67,7 @@ class Plox:
         if token is TokenType.EOF:
             where = " at end"
         elif token is not None:
-            where = f" at {token.lexeme}"
+            where = f" at '{token.lexeme}'"
         else:
             where = ""
 
