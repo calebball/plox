@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, List
 
 from attr import define
 
@@ -28,6 +28,16 @@ class Binary(Expr):
 
     def accept(self, visitor: "ExprVisitor"):
         return visitor.visit_binary(self)
+
+
+@define
+class Call(Expr):
+    callee: Expr
+    paren: Token
+    arguments: List[Expr]
+
+    def accept(self, visitor: "ExprVisitor"):
+        return visitor.visit_call(self)
 
 
 @define
@@ -80,6 +90,10 @@ class ExprVisitor(ABC):
 
     @abstractmethod
     def visit_binary(self, expr: Binary):
+        ...
+
+    @abstractmethod
+    def visit_call(self, expr: Call):
         ...
 
     @abstractmethod

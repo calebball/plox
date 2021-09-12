@@ -29,6 +29,16 @@ class Expression(Stmt):
 
 
 @define
+class Function(Stmt):
+    name: Token
+    params: List[Token]
+    body: Stmt
+
+    def accept(self, visitor: "StmtVisitor"):
+        return visitor.visit_function(self)
+
+
+@define
 class If(Stmt):
     condition: Expr
     then_branch: Stmt
@@ -71,6 +81,10 @@ class StmtVisitor(ABC):
 
     @abstractmethod
     def visit_expression(self, expr: Expression):
+        ...
+
+    @abstractmethod
+    def visit_function(self, expr: Function):
         ...
 
     @abstractmethod

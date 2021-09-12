@@ -7,6 +7,11 @@
     "Expression": {
       "expression": "plox.expressions.Expr"
     },
+    "Function": {
+      "name": "plox.tokens.Token",
+      "params": "plox.tokens.Token",
+      "body": "Stmt"
+    },
     "If": {
       "condition": "plox.expressions.Expr",
       "then_branch": "Stmt",

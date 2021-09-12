@@ -10,6 +10,11 @@
       "operator": "plox.tokens.Token",
       "right": "Expr"
     },
+    "Call": {
+      "callee": "Expr",
+      "paren": "plox.tokens.Token",
+      "arguments": "Expr"
+    },
     "Grouping": {
       "expression": "Expr"
     },

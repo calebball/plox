@@ -1,13 +1,14 @@
-from typing import Any, List
+from typing import Any, ClassVar, List
 
 from attr import define, field
 
 from plox.cli import Plox
-from plox.environment import Environment
+from plox.environment import Environment, standard_global_environment
 from plox.errors import LoxRuntimeError
 from plox.expressions import (
     Assign,
     Binary,
+    Call,
     Expr,
     ExprVisitor,
     Grouping,
@@ -16,13 +17,29 @@ from plox.expressions import (
     Unary,
     Variable,
 )
-from plox.statements import Block, Expression, If, Print, Stmt, StmtVisitor, Var, While
+from plox.function import LoxFunction
+from plox.statements import (
+    Block,
+    Expression,
+    Function,
+    If,
+    Print,
+    Stmt,
+    StmtVisitor,
+    Var,
+    While,
+)
 from plox.tokens import Token, TokenType
 
 
 @define
 class Interpreter(ExprVisitor, StmtVisitor):
-    environment: Environment = field(factory=Environment)
+    globals: ClassVar[Environment] = standard_global_environment()
+    environment: Environment = field()
+
+    @environment.default
+    def _default_to_global_environment(self):
+        return self.globals
 
     def interpret(self, statements: List[Stmt]):
         try:
@@ -41,6 +58,10 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def visit_expression(self, stmt: Expression) -> None:
         self.evaluate(stmt.expression)
+
+    def visit_function(self, stmt: Function) -> None:
+        function = LoxFunction(stmt)
+        self.environment.define(stmt.name.lexeme, function)
 
     def visit_if(self, stmt: If) -> None:
         if self.is_truthy(self.evaluate(stmt.condition)):
@@ -121,6 +142,22 @@ class Interpreter(ExprVisitor, StmtVisitor):
         if expr.operator.type is TokenType.SLASH:
             self.check_number_operands(expr.operator, left, right)
             return float(left) / float(right)
+
+    def visit_call(self, expr: Call) -> Any:
+        callee = self.evaluate(expr.callee)
+
+        arguments = [self.evaluate(arg) for arg in expr.arguments]
+
+        if not (hasattr(callee, "call") and callable(callee.call)):
+            raise LoxRuntimeError(expr.paren, "Can only call functions and classes.")
+
+        if len(arguments) != callee.arity():
+            raise LoxRuntimeError(
+                expr.paren,
+                f"Expected {callee.arity()} arguments but got {len(arguments)}.",
+            )
+
+        return callee.call(self, arguments)
 
     def visit_grouping(self, expr: Grouping) -> Any:
         return self.evaluate(expr.expression)
