@@ -2,6 +2,7 @@ from typing import Any, List
 
 from attr import define
 
+from plox.errors import ReturnException
 from plox.environment import Environment
 from plox.statements import Function
 
@@ -15,7 +16,10 @@ class LoxFunction:
         for param, arg in zip(self.declaration.params, arguments):
             environment.define(param.lexeme, arg)
 
-        interpreter.execute_block(self.declaration.body, environment)
+        try:
+            interpreter.execute_block(self.declaration.body, environment)
+        except ReturnException as exc:
+            return exc.value
 
     def arity(self) -> int:
         return len(self.declaration.params)

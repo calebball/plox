@@ -20,6 +20,10 @@
     "Print": {
       "expression": "plox.expressions.Expr"
     },
+    "Return": {
+      "keyword": "plox.tokens.Token",
+      "value": "plox.expressions.Expr"
+    },
     "Var": {
       "name": "plox.tokens.Token",
       "initialiser": "plox.expressions.Expr"

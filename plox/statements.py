@@ -57,6 +57,15 @@ class Print(Stmt):
 
 
 @define
+class Return(Stmt):
+    keyword: Token
+    value: Expr
+
+    def accept(self, visitor: "StmtVisitor"):
+        return visitor.visit_return(self)
+
+
+@define
 class Var(Stmt):
     name: Token
     initialiser: Optional[Expr]
@@ -93,6 +102,10 @@ class StmtVisitor(ABC):
 
     @abstractmethod
     def visit_print(self, expr: Print):
+        ...
+
+    @abstractmethod
+    def visit_return(self, expr: Return):
         ...
 
     @abstractmethod

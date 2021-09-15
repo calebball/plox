@@ -15,7 +15,7 @@ from plox.expressions import (
     Unary,
     Variable,
 )
-from plox.statements import Block, Expression, Function, If, Print, Stmt, Var, While
+from plox.statements import Block, Expression, Function, If, Print, Return, Stmt, Var, While
 from plox.tokens import Token, TokenType
 
 
@@ -138,6 +138,7 @@ class Parser:
                         |  forStmt
                         |  ifStmt
                         |  printStmt
+                        |  returnStmt
                         |  whileStmt
                         |  block
 
@@ -152,6 +153,9 @@ class Parser:
 
         if self.match(TokenType.PRINT):
             return self.print_statement()
+
+        if self.match(TokenType.RETURN):
+            return self.return_statement()
 
         if self.match(TokenType.WHILE):
             return self.while_statement()
@@ -234,6 +238,19 @@ class Parser:
         value = self.expression()
         self.consume(TokenType.SEMICOLON, "Expect ';' after value.")
         return Print(value)
+
+    def return_statement(self) -> Return:
+        """Parse a return statement from the token stream.
+
+        This method implements the rule
+            returnStmt -> "return" expression ";"
+        """
+        keyword = self.previous()
+        value = None
+        if not self.check(TokenType.SEMICOLON):
+            value = self.expression()
+        self.consume(TokenType.SEMICOLON, "Expect ';' after return value.")
+        return Return(keyword, value)
 
     def while_statement(self) -> While:
         """Parse the a while statement from the token stream.

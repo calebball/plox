@@ -4,7 +4,7 @@ from attr import define, field
 
 from plox.cli import Plox
 from plox.environment import Environment, standard_global_environment
-from plox.errors import LoxRuntimeError
+from plox.errors import LoxRuntimeError, ReturnException
 from plox.expressions import (
     Assign,
     Binary,
@@ -24,6 +24,7 @@ from plox.statements import (
     Function,
     If,
     Print,
+    Return,
     Stmt,
     StmtVisitor,
     Var,
@@ -73,6 +74,12 @@ class Interpreter(ExprVisitor, StmtVisitor):
     def visit_print(self, stmt: Print) -> None:
         value = self.evaluate(stmt.expression)
         print(self.stringify(value))
+
+    def visit_return(self, stmt: Return) -> None:
+        value = None
+        if stmt.value is not None:
+            value = self.evaluate(stmt.value)
+        raise ReturnException(value)
 
     def visit_while(self, stmt: While) -> None:
         while self.is_truthy(self.evaluate(stmt.condition)):
