@@ -13,10 +13,16 @@ class Environment:
     enclosing: Optional["Environment"] = field(default=None)
     values: Dict[str, Any] = field(init=False, factory=dict)
 
-    def define(self, name: str, value: Any):
+    def define(self, name: str, value: Any) -> None:
         self.values[name] = value
 
-    def get(self, name: Token):
+    def ancestor(self, depth: int) -> "Environment":
+        env = self
+        for _ in range(depth):
+            env = env.enclosing
+        return env
+
+    def get(self, name: Token) -> Any:
         if name.lexeme in self.values:
             return self.values[name.lexeme]
 
@@ -24,6 +30,9 @@ class Environment:
             return self.enclosing.get(name)
 
         raise LoxRuntimeError(name, f"Undefined variable '{name.lexeme}'.")
+
+    def get_at(self, depth: int, name: str) -> Any:
+        return self.ancestor(depth).values[name]
 
     def assign(self, name: Token, value: Any):
         if name.lexeme in self.values:
@@ -34,6 +43,9 @@ class Environment:
             return self.enclosing.assign(name, value)
 
         raise LoxRuntimeError(name, f"Undefined variable '{name.lexeme}'.")
+
+    def assign_at(self, depth: int, name: Token, value: Any) -> None:
+        self.ancestor(depth).values[name.lexeme] = value
 
 
 def standard_global_environment() -> Environment:

@@ -1,4 +1,4 @@
-from typing import Any, ClassVar, List
+from typing import Any, ClassVar, Dict, List
 
 from attr import define, field
 
@@ -37,6 +37,7 @@ from plox.tokens import Token, TokenType
 class Interpreter(ExprVisitor, StmtVisitor):
     globals: ClassVar[Environment] = standard_global_environment()
     environment: Environment = field()
+    locals: Dict[Expr, int] = field(factory=dict)
 
     @environment.default
     def _default_to_global_environment(self):
@@ -90,7 +91,11 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def visit_assign(self, expr: Assign) -> Any:
         value = self.evaluate(expr.value)
-        self.environment.assign(expr.name, value)
+        depth = self.locals.get(expr)
+        if depth is not None:
+            self.environment.assign_at(depth, expr.name, value)
+        else:
+            self.globals.assign(expr.name, value)
         return value
 
     def visit_logical(self, expr: Logical) -> Any:
@@ -173,7 +178,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
         return expr.value
 
     def visit_variable(self, expr: Variable) -> Any:
-        return self.environment.get(expr.name)
+        return self.look_up_variable(expr.name, expr)
 
     def visit_unary(self, expr: Unary) -> Any:
         right = self.evaluate(expr.right)
@@ -216,12 +221,21 @@ class Interpreter(ExprVisitor, StmtVisitor):
             return left is right
         return left == right
 
+    def look_up_variable(self, name: Token, expr: Expr) -> Any:
+        depth = self.locals.get(expr)
+        if depth is not None:
+            return self.environment.get_at(depth, name.lexeme)
+        return self.globals.get(name)
+
     def check_number_operands(self, operator: Token, *operands: List[Any]) -> None:
         if any(not isinstance(operand, float) for operand in operands):
             if len(operands) > 1:
                 raise LoxRuntimeError(operator, "Operands must be numbers.")
             else:
                 raise LoxRuntimeError(operator, "Operand must be a number.")
+
+    def resolve(self, expr: Expr, depth: int) -> None:
+        self.locals[expr] = depth
 
     def stringify(self, obj: Any) -> str:
         if obj is None:

@@ -47,6 +47,7 @@ class Plox:
     def run(cls, source: str):
         from plox.interpreter import Interpreter
         from plox.parser import Parser
+        from plox.resolver import Resolver
         from plox.scanner import Scanner
 
         if cls.interpreter is None:
@@ -56,6 +57,11 @@ class Plox:
         tokens = scanner.scan_tokens()
 
         statements = Parser(tokens).parse()
+
+        if cls.HAD_ERROR:
+            return
+
+        Resolver(cls.interpreter).resolve(statements)
 
         if cls.HAD_ERROR:
             return

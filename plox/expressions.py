@@ -11,7 +11,7 @@ class Expr:
         ...
 
 
-@define
+@define(eq=False)
 class Assign(Expr):
     name: Token
     value: Expr
@@ -20,7 +20,7 @@ class Assign(Expr):
         return visitor.visit_assign(self)
 
 
-@define
+@define(eq=False)
 class Binary(Expr):
     left: Expr
     operator: Token
@@ -30,7 +30,7 @@ class Binary(Expr):
         return visitor.visit_binary(self)
 
 
-@define
+@define(eq=False)
 class Call(Expr):
     callee: Expr
     paren: Token
@@ -40,7 +40,7 @@ class Call(Expr):
         return visitor.visit_call(self)
 
 
-@define
+@define(eq=False)
 class Grouping(Expr):
     expression: Expr
 
@@ -48,7 +48,7 @@ class Grouping(Expr):
         return visitor.visit_grouping(self)
 
 
-@define
+@define(eq=False)
 class Literal(Expr):
     value: Any
 
@@ -56,7 +56,7 @@ class Literal(Expr):
         return visitor.visit_literal(self)
 
 
-@define
+@define(eq=False)
 class Logical(Expr):
     left: Expr
     operator: Token
@@ -66,7 +66,7 @@ class Logical(Expr):
         return visitor.visit_logical(self)
 
 
-@define
+@define(eq=False)
 class Unary(Expr):
     operator: Token
     right: Expr
@@ -75,7 +75,7 @@ class Unary(Expr):
         return visitor.visit_unary(self)
 
 
-@define
+@define(eq=False)
 class Variable(Expr):
     name: Token
 
