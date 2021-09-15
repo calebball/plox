@@ -10,9 +10,10 @@ from plox.statements import Function
 @define
 class LoxFunction:
     declaration: Function
+    closure: Environment
 
     def call(self, interpreter: "Interpreter", arguments: List[Any]) -> None:
-        environment = Environment(interpreter.globals)
+        environment = Environment(self.closure)
         for param, arg in zip(self.declaration.params, arguments):
             environment.define(param.lexeme, arg)
 
