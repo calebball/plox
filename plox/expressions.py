@@ -41,6 +41,15 @@ class Call(Expr):
 
 
 @define(eq=False)
+class Get(Expr):
+    obj: Expr
+    name: Token
+
+    def accept(self, visitor: "ExprVisitor"):
+        return visitor.visit_get(self)
+
+
+@define(eq=False)
 class Grouping(Expr):
     expression: Expr
 
@@ -64,6 +73,16 @@ class Logical(Expr):
 
     def accept(self, visitor: "ExprVisitor"):
         return visitor.visit_logical(self)
+
+
+@define(eq=False)
+class Set(Expr):
+    obj: Expr
+    name: Token
+    value: Expr
+
+    def accept(self, visitor: "ExprVisitor"):
+        return visitor.visit_set(self)
 
 
 @define(eq=False)
@@ -97,6 +116,10 @@ class ExprVisitor(ABC):
         ...
 
     @abstractmethod
+    def visit_get(self, expr: Get):
+        ...
+
+    @abstractmethod
     def visit_grouping(self, expr: Grouping):
         ...
 
@@ -106,6 +129,10 @@ class ExprVisitor(ABC):
 
     @abstractmethod
     def visit_logical(self, expr: Logical):
+        ...
+
+    @abstractmethod
+    def visit_set(self, expr: Set):
         ...
 
     @abstractmethod

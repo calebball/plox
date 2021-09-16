@@ -2,7 +2,7 @@ from typing import Any, ClassVar, Dict, List
 
 from attr import define, field
 
-from plox.classes import LoxClass
+from plox.classes import LoxClass, LoxInstance
 from plox.cli import Plox
 from plox.environment import Environment, standard_global_environment
 from plox.errors import LoxRuntimeError, ReturnException
@@ -12,9 +12,11 @@ from plox.expressions import (
     Call,
     Expr,
     ExprVisitor,
+    Get,
     Grouping,
     Literal,
     Logical,
+    Set,
     Unary,
     Variable,
 )
@@ -178,6 +180,12 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
         return callee.call(self, arguments)
 
+    def visit_get(self, expr: Get) -> Any:
+        obj = self.evaluate(expr.obj)
+        if isinstance(obj, LoxInstance):
+            return obj.get(expr.name)
+        raise LoxRuntimeError(expr.name, "Only instances have properties.")
+
     def visit_grouping(self, expr: Grouping) -> Any:
         return self.evaluate(expr.expression)
 
@@ -186,6 +194,16 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def visit_variable(self, expr: Variable) -> Any:
         return self.look_up_variable(expr.name, expr)
+
+    def visit_set(self, expr: Set) -> Any:
+        obj = self.evaluate(expr.obj)
+
+        if not isinstance(obj, LoxInstance):
+            raise LoxRuntimeError(expr.name, "Only instances have fields.")
+
+        value = self.evaluate(expr.value)
+        obj.set(expr.name, value)
+        return value
 
     def visit_unary(self, expr: Unary) -> Any:
         right = self.evaluate(expr.right)

@@ -9,9 +9,11 @@ from plox.expressions import (
     Binary,
     Call,
     Expr,
+    Get,
     Grouping,
     Literal,
     Logical,
+    Set,
     Unary,
     Variable,
 )
@@ -358,7 +360,7 @@ class Parser:
         """Parse an assignment expression from the token stream.
 
         This method implements the rule
-            assignment  -> IDENTIFIER "=" assignment
+            assignment  -> ( call "." )? IDENTIFIER "=" assignment
                         |  logic_or
         """
         expr = self.logic_or()
@@ -370,6 +372,9 @@ class Parser:
             if isinstance(expr, Variable):
                 name = expr.name
                 return Assign(name, value)
+
+            elif isinstance(expr, Get):
+                return Set(expr.obj, expr.name, value)
 
             Plox.error(equals.line, "Invalid assignment target.", equals)
 
@@ -483,23 +488,37 @@ class Parser:
         """Parse a function call from the token stream.
 
         This method implements the rules
-            call -> primary ( "(" arguments? ")" )* ;
+            call -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
             arguments -> expression ( "," expression )* ;
         """
         expr = self.primary()
 
-        while self.match(TokenType.LEFT_PAREN):
-            arguments = []
+        while True:
+            if self.match(TokenType.LEFT_PAREN):
+                arguments = []
 
-            if not self.check(TokenType.RIGHT_PAREN):
-                arguments.append(self.expression())
-                while self.match(TokenType.COMMA):
-                    if len(arguments) >= 255:
-                        self.error(self.peek(), "Can't have more than 255 arguments.")
+                if not self.check(TokenType.RIGHT_PAREN):
                     arguments.append(self.expression())
+                    while self.match(TokenType.COMMA):
+                        if len(arguments) >= 255:
+                            self.error(
+                                self.peek(), "Can't have more than 255 arguments."
+                            )
+                        arguments.append(self.expression())
 
-            paren = self.consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.")
-            expr = Call(expr, paren, arguments)
+                paren = self.consume(
+                    TokenType.RIGHT_PAREN, "Expect ')' after arguments."
+                )
+                expr = Call(expr, paren, arguments)
+
+            elif self.match(TokenType.DOT):
+                name = self.consume(
+                    TokenType.IDENTIFIER, "Expect property name after '.'."
+                )
+                expr = Get(expr, name)
+
+            else:
+                break
 
         return expr
 

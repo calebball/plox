@@ -10,9 +10,11 @@ from plox.expressions import (
     Call,
     Expr,
     ExprVisitor,
+    Get,
     Grouping,
     Literal,
     Logical,
+    Set,
     Unary,
     Variable,
 )
@@ -101,6 +103,9 @@ class Resolver(ExprVisitor, StmtVisitor):
         for arg in expr.arguments:
             self.resolve_expression(arg)
 
+    def visit_get(self, expr: Get) -> None:
+        self.resolve_expression(expr.obj)
+
     def visit_grouping(self, expr: Grouping) -> None:
         self.resolve_expression(expr.expression)
 
@@ -110,6 +115,10 @@ class Resolver(ExprVisitor, StmtVisitor):
     def visit_logical(self, expr: Logical) -> None:
         self.resolve_expression(expr.left)
         self.resolve_expression(expr.right)
+
+    def visit_set(self, expr: Set) -> None:
+        self.resolve_expression(expr.value)
+        self.resolve_expression(expr.obj)
 
     def visit_unary(self, expr: Unary) -> None:
         self.resolve_expression(expr.right)
