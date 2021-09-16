@@ -1,3 +1,4 @@
+import enum
 from typing import Dict, List
 
 from attr import define, field
@@ -31,10 +32,16 @@ from plox.statements import (
 from plox.tokens import Token
 
 
+class FunctionType(enum.Enum):
+    NONE = enum.auto()
+    FUNCTION = enum.auto()
+
+
 @define
 class Resolver(ExprVisitor, StmtVisitor):
     interpreter: Interpreter
     scopes: List[Dict[str, bool]] = field(factory=list)
+    current_function: FunctionType = FunctionType.NONE
 
     def visit_block(self, stmt: Block) -> None:
         self.begin_scope()
@@ -47,7 +54,7 @@ class Resolver(ExprVisitor, StmtVisitor):
     def visit_function(self, stmt: Function) -> None:
         self.declare(stmt.name)
         self.define(stmt.name)
-        self.resolve_function(stmt)
+        self.resolve_function(stmt, FunctionType.FUNCTION)
 
     def visit_if(self, stmt: If) -> None:
         self.resolve_expression(stmt.condition)
@@ -59,6 +66,10 @@ class Resolver(ExprVisitor, StmtVisitor):
         self.resolve_expression(stmt.expression)
 
     def visit_return(self, stmt: Return) -> None:
+        if self.current_function is FunctionType.NONE:
+            Plox.error(
+                stmt.keyword.line, "Can't return from top-level code.", stmt.keyword
+            )
         if stmt.value is not None:
             self.resolve_expression(stmt.value)
 
@@ -122,13 +133,18 @@ class Resolver(ExprVisitor, StmtVisitor):
             if name.lexeme in scope:
                 return self.interpreter.resolve(expr, depth)
 
-    def resolve_function(self, stmt: Function) -> None:
+    def resolve_function(self, stmt: Function, function_type: FunctionType) -> None:
+        enclosing_function = self.current_function
+        self.current_function = function_type
         self.begin_scope()
+
         for param in stmt.params:
             self.declare(param)
             self.define(param)
         self.resolve(stmt.body)
+
         self.end_scope()
+        self.current_function = enclosing_function
 
     def begin_scope(self) -> None:
         self.scopes.append({})
@@ -138,7 +154,12 @@ class Resolver(ExprVisitor, StmtVisitor):
 
     def declare(self, name: Token) -> None:
         if self.scopes:
-            self.scopes[-1][name.lexeme] = False
+            current_scope = self.scopes[-1]
+            if name.lexeme in current_scope:
+                Plox.error(
+                    name.line, "Already a variable with this name in this scope.", name
+                )
+            current_scope[name.lexeme] = False
 
     def define(self, name: Token) -> None:
         if self.scopes:
