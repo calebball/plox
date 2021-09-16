@@ -2,6 +2,7 @@ from typing import Any, ClassVar, Dict, List
 
 from attr import define, field
 
+from plox.classes import LoxClass
 from plox.cli import Plox
 from plox.environment import Environment, standard_global_environment
 from plox.errors import LoxRuntimeError, ReturnException
@@ -20,6 +21,7 @@ from plox.expressions import (
 from plox.function import LoxFunction
 from plox.statements import (
     Block,
+    Class,
     Expression,
     Function,
     If,
@@ -57,6 +59,11 @@ class Interpreter(ExprVisitor, StmtVisitor):
             value = self.evaluate(stmt.initialiser)
 
         self.environment.define(stmt.name.lexeme, value)
+
+    def visit_class(self, stmt: Class) -> None:
+        self.environment.define(stmt.name.lexeme, None)
+        cls = LoxClass(stmt.name.lexeme)
+        self.environment.assign(stmt.name, cls)
 
     def visit_expression(self, stmt: Expression) -> None:
         self.evaluate(stmt.expression)

@@ -21,6 +21,15 @@ class Block(Stmt):
 
 
 @define
+class Class(Stmt):
+    name: Token
+    methods: List["Function"]
+
+    def accept(self, visitor: "StmtVisitor"):
+        return visitor.visit_class(self)
+
+
+@define
 class Expression(Stmt):
     expression: Expr
 
@@ -86,6 +95,10 @@ class While(Stmt):
 class StmtVisitor(ABC):
     @abstractmethod
     def visit_block(self, expr: Block):
+        ...
+
+    @abstractmethod
+    def visit_class(self, expr: Class):
         ...
 
     @abstractmethod

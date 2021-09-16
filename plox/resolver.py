@@ -19,6 +19,7 @@ from plox.expressions import (
 from plox.interpreter import Interpreter
 from plox.statements import (
     Block,
+    Class,
     Expression,
     Function,
     If,
@@ -47,6 +48,10 @@ class Resolver(ExprVisitor, StmtVisitor):
         self.begin_scope()
         self.resolve(stmt.statements)
         self.end_scope()
+
+    def visit_class(self, stmt: Class) -> None:
+        self.declare(stmt.name)
+        self.define(stmt.name)
 
     def visit_expression(self, stmt: Expression) -> None:
         self.resolve_expression(stmt.expression)

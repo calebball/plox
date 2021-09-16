@@ -15,7 +15,18 @@ from plox.expressions import (
     Unary,
     Variable,
 )
-from plox.statements import Block, Expression, Function, If, Print, Return, Stmt, Var, While
+from plox.statements import (
+    Block,
+    Class,
+    Expression,
+    Function,
+    If,
+    Print,
+    Return,
+    Stmt,
+    Var,
+    While,
+)
 from plox.tokens import Token, TokenType
 
 
@@ -101,11 +112,14 @@ class Parser:
         """Parse the next declaration from the token stream.
 
         This method implements the rule
-            declaration -> funDecl
+            declaration -> classDecl
+                        |  funDecl
                         |  varDecl
                         |  statement
         """
         try:
+            if self.match(TokenType.CLASS):
+                return self.class_declaration()
             if self.match(TokenType.FUN):
                 return self.function("function")
             if self.match(TokenType.VAR):
@@ -281,6 +295,23 @@ class Parser:
         self.consume(TokenType.RIGHT_BRACE, "Expect '}' after block.")
         return statements
 
+    def class_declaration(self) -> Class:
+        """Parsen the contents of a class declaration from the token stream.
+
+        This method implements the rule
+            classDecl -> "class" IDENTIFIER "{" function* "}" ;
+        """
+        name = self.consume(TokenType.IDENTIFIER, "Expect class name.")
+        self.consume(TokenType.LEFT_BRACE, "Expect '{' before class body.")
+
+        methods = []
+        while not self.check(TokenType.RIGHT_BRACE) and not self.is_at_end:
+            methods.append(self.function("method"))
+
+        self.consume(TokenType.RIGHT_BRACE, "Expect '}' after class body.")
+
+        return Class(name, methods)
+
     def expression_statement(self) -> Expression:
         """Parse the contents of an expression statement from the token stream.
 
@@ -291,7 +322,7 @@ class Parser:
         self.consume(TokenType.SEMICOLON, "Expect ';' after expression.")
         return Expression(value)
 
-    def function(self, kind: str) -> Stmt:
+    def function(self, kind: str) -> Function:
         """Parse a function definition from the token stream.
 
         This method implements the rule

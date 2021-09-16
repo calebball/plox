@@ -4,6 +4,10 @@
     "Block": {
         "statements": "Stmt"
     },
+    "Class": {
+        "name": "plox.tokens.Token",
+        "methods": "Function"
+    },
     "Expression": {
       "expression": "plox.expressions.Expr"
     },
