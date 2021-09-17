@@ -35,6 +35,10 @@
       "name": "plox.tokens.Token",
       "value": "Expr"
     },
+    "Super": {
+      "keyword": "plox.tokens.Token",
+      "method": "plox.tokens.Token"
+    },
     "This": {
       "keyword": "plox.tokens.Token"
     },

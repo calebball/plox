@@ -86,6 +86,15 @@ class Set(Expr):
 
 
 @define(eq=False)
+class Super(Expr):
+    keyword: Token
+    method: Token
+
+    def accept(self, visitor: "ExprVisitor"):
+        return visitor.visit_super(self)
+
+
+@define(eq=False)
 class This(Expr):
     keyword: Token
 
@@ -141,6 +150,10 @@ class ExprVisitor(ABC):
 
     @abstractmethod
     def visit_set(self, expr: Set):
+        ...
+
+    @abstractmethod
+    def visit_super(self, expr: Super):
         ...
 
     @abstractmethod

@@ -14,6 +14,7 @@ from plox.expressions import (
     Literal,
     Logical,
     Set,
+    Super,
     This,
     Unary,
     Variable,
@@ -533,7 +534,8 @@ class Parser:
         """Parse a primary expression from the front of the token stream.
 
         This method implements the rule
-            primary -> nil | bool | number | string | grouping
+            primary -> "true" | "false" | "nil" | "this" | number | string
+                    |  identifier | "(" expression ")" | "super" "." identifier
         """
         if self.match(TokenType.FALSE):
             return Literal(False)
@@ -551,5 +553,12 @@ class Parser:
             return This(self.previous())
         if self.match(TokenType.IDENTIFIER):
             return Variable(self.previous())
+        if self.match(TokenType.SUPER):
+            keyword = self.previous()
+            self.consume(TokenType.DOT, "Expect '.' after 'super'.")
+            method = self.consume(
+                TokenType.IDENTIFIER, "Expect superclass method name."
+            )
+            return Super(keyword, method)
 
         raise self.error(self.peek(), "Expect expression.")

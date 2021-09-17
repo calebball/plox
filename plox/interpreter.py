@@ -17,6 +17,7 @@ from plox.expressions import (
     Literal,
     Logical,
     Set,
+    Super,
     This,
     Unary,
     Variable,
@@ -73,6 +74,11 @@ class Interpreter(ExprVisitor, StmtVisitor):
                 )
 
         self.environment.define(stmt.name.lexeme, None)
+
+        if stmt.superclass is not None:
+            self.environment = Environment(self.environment)
+            self.environment.define("super", superclass)
+
         methods = {
             method.name.lexeme: LoxFunction(
                 method, self.environment, method.name.lexeme == "init"
@@ -80,6 +86,10 @@ class Interpreter(ExprVisitor, StmtVisitor):
             for method in stmt.methods
         }
         cls = LoxClass(stmt.name.lexeme, superclass, methods)
+
+        if superclass is not None:
+            self.environment = self.environment.enclosing
+
         self.environment.assign(stmt.name, cls)
 
     def visit_expression(self, stmt: Expression) -> None:
@@ -219,6 +229,20 @@ class Interpreter(ExprVisitor, StmtVisitor):
         value = self.evaluate(expr.value)
         obj.set(expr.name, value)
         return value
+
+    def visit_super(self, expr: Super) -> Any:
+        distance = self.locals[expr]
+        superclass = self.environment.get_at(distance, "super")
+        obj = self.environment.get_at(distance - 1, "this")
+
+        method = superclass.find_method(expr.method.lexeme)
+
+        if method is None:
+            raise LoxRuntimeError(
+                expr.method, f"Undefined property '{expr.method.lexeme}'."
+            )
+
+        return method.bind(obj)
 
     def visit_this(self, expr: This) -> Any:
         return self.look_up_variable(expr.keyword, expr)

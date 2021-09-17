@@ -15,6 +15,7 @@ from plox.expressions import (
     Literal,
     Logical,
     Set,
+    Super,
     This,
     Unary,
     Variable,
@@ -46,6 +47,7 @@ class FunctionType(enum.Enum):
 class ClassType(enum.Enum):
     NONE = enum.auto()
     CLASS = enum.auto()
+    SUBCLASS = enum.auto()
 
 
 @define
@@ -78,7 +80,12 @@ class Resolver(ExprVisitor, StmtVisitor):
             )
 
         if stmt.superclass is not None:
+            self.current_class = ClassType.SUBCLASS
             self.resolve_expression(stmt.superclass)
+
+        if stmt.superclass is not None:
+            self.begin_scope()
+            self.scopes[-1]["super"] = True
 
         self.begin_scope()
         self.scopes[-1]["this"] = True
@@ -90,6 +97,10 @@ class Resolver(ExprVisitor, StmtVisitor):
                 self.resolve_function(method, FunctionType.METHOD)
 
         self.end_scope()
+
+        if stmt.superclass is not None:
+            self.end_scope()
+
         self.current_class = enclosing_class
 
     def visit_expression(self, stmt: Expression) -> None:
@@ -162,6 +173,20 @@ class Resolver(ExprVisitor, StmtVisitor):
     def visit_set(self, expr: Set) -> None:
         self.resolve_expression(expr.value)
         self.resolve_expression(expr.obj)
+
+    def visit_super(self, expr: Super) -> None:
+        if self.current_class is ClassType.NONE:
+            Plox.error(
+                expr.keyword.line, "Can't use 'super' outside of a class.", expr.keyword
+            )
+        elif self.current_class is not ClassType.SUBCLASS:
+            Plox.error(
+                expr.keyword.line,
+                "Can't use 'super' in a class with no superclass.",
+                expr.keyword,
+            )
+
+        self.resolve_local(expr, expr.keyword)
 
     def visit_this(self, expr: This) -> None:
         if self.current_class is ClassType.NONE:
