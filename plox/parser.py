@@ -14,6 +14,7 @@ from plox.expressions import (
     Literal,
     Logical,
     Set,
+    This,
     Unary,
     Variable,
 )
@@ -540,6 +541,8 @@ class Parser:
             expr = self.expression()
             self.consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
             return Grouping(expr)
+        if self.match(TokenType.THIS):
+            return This(self.previous())
         if self.match(TokenType.IDENTIFIER):
             return Variable(self.previous())
 

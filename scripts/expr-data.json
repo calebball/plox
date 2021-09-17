@@ -35,6 +35,9 @@
       "name": "plox.tokens.Token",
       "value": "Expr"
     },
+    "This": {
+      "keyword": "plox.tokens.Token"
+    },
     "Unary": {
       "operator": "plox.tokens.Token",
       "right": "Expr"

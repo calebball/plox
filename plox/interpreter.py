@@ -17,6 +17,7 @@ from plox.expressions import (
     Literal,
     Logical,
     Set,
+    This,
     Unary,
     Variable,
 )
@@ -64,7 +65,11 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def visit_class(self, stmt: Class) -> None:
         self.environment.define(stmt.name.lexeme, None)
-        cls = LoxClass(stmt.name.lexeme)
+        methods = {
+            method.name.lexeme: LoxFunction(method, self.environment)
+            for method in stmt.methods
+        }
+        cls = LoxClass(stmt.name.lexeme, methods)
         self.environment.assign(stmt.name, cls)
 
     def visit_expression(self, stmt: Expression) -> None:
@@ -204,6 +209,9 @@ class Interpreter(ExprVisitor, StmtVisitor):
         value = self.evaluate(expr.value)
         obj.set(expr.name, value)
         return value
+
+    def visit_this(self, expr: This) -> Any:
+        return self.look_up_variable(expr.keyword, expr)
 
     def visit_unary(self, expr: Unary) -> Any:
         right = self.evaluate(expr.right)

@@ -86,6 +86,14 @@ class Set(Expr):
 
 
 @define(eq=False)
+class This(Expr):
+    keyword: Token
+
+    def accept(self, visitor: "ExprVisitor"):
+        return visitor.visit_this(self)
+
+
+@define(eq=False)
 class Unary(Expr):
     operator: Token
     right: Expr
@@ -133,6 +141,10 @@ class ExprVisitor(ABC):
 
     @abstractmethod
     def visit_set(self, expr: Set):
+        ...
+
+    @abstractmethod
+    def visit_this(self, expr: This):
         ...
 
     @abstractmethod

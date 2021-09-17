@@ -12,6 +12,11 @@ class LoxFunction:
     declaration: Function
     closure: Environment
 
+    def bind(self, instance: "LoxInstance") -> "LoxFunction":
+        environment = Environment(self.closure)
+        environment.define("this", instance)
+        return LoxFunction(self.declaration, environment)
+
     def call(self, interpreter: "Interpreter", arguments: List[Any]) -> None:
         environment = Environment(self.closure)
         for param, arg in zip(self.declaration.params, arguments):

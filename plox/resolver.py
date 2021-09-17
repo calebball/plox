@@ -15,6 +15,7 @@ from plox.expressions import (
     Literal,
     Logical,
     Set,
+    This,
     Unary,
     Variable,
 )
@@ -38,6 +39,12 @@ from plox.tokens import Token
 class FunctionType(enum.Enum):
     NONE = enum.auto()
     FUNCTION = enum.auto()
+    METHOD = enum.auto()
+
+
+class ClassType(enum.Enum):
+    NONE = enum.auto()
+    CLASS = enum.auto()
 
 
 @define
@@ -45,6 +52,7 @@ class Resolver(ExprVisitor, StmtVisitor):
     interpreter: Interpreter
     scopes: List[Dict[str, bool]] = field(factory=list)
     current_function: FunctionType = FunctionType.NONE
+    current_class: ClassType = ClassType.NONE
 
     def visit_block(self, stmt: Block) -> None:
         self.begin_scope()
@@ -52,8 +60,20 @@ class Resolver(ExprVisitor, StmtVisitor):
         self.end_scope()
 
     def visit_class(self, stmt: Class) -> None:
+        enclosing_class = self.current_class
+        self.current_class = ClassType.CLASS
+
         self.declare(stmt.name)
         self.define(stmt.name)
+
+        self.begin_scope()
+        self.scopes[-1]["this"] = True
+
+        for method in stmt.methods:
+            self.resolve_function(method, FunctionType.METHOD)
+
+        self.end_scope()
+        self.current_class = enclosing_class
 
     def visit_expression(self, stmt: Expression) -> None:
         self.resolve_expression(stmt.expression)
@@ -119,6 +139,14 @@ class Resolver(ExprVisitor, StmtVisitor):
     def visit_set(self, expr: Set) -> None:
         self.resolve_expression(expr.value)
         self.resolve_expression(expr.obj)
+
+    def visit_this(self, expr: This) -> None:
+        if self.current_class is ClassType.NONE:
+            Plox.error(
+                expr.keyword.line, "Can't use 'this' outside of a class.", expr.keyword
+            )
+            return
+        self.resolve_local(expr, expr.keyword)
 
     def visit_unary(self, expr: Unary) -> None:
         self.resolve_expression(expr.right)
