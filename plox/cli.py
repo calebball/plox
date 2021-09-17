@@ -70,12 +70,12 @@ class Plox:
 
     @classmethod
     def error(cls, line: int, message: str, token: Optional[Token] = None):
-        if token is TokenType.EOF:
-            where = " at end"
-        elif token is not None:
-            where = f" at '{token.lexeme}'"
-        else:
+        if token is None:
             where = ""
+        elif token.type is TokenType.EOF:
+            where = " at end"
+        else:
+            where = f" at '{token.lexeme}'"
 
         cls.report(line, where, message)
 
