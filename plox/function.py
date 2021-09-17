@@ -7,7 +7,7 @@ from plox.environment import Environment
 from plox.statements import Function
 
 
-@define
+@define(eq=False)
 class LoxFunction:
     declaration: Function
     closure: Environment
