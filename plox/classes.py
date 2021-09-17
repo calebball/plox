@@ -35,9 +35,16 @@ class LoxClass:
     methods: Dict[str, LoxFunction]
 
     def call(self, interpreter: "Interpreter", arguments: List[Any]) -> LoxInstance:
-        return LoxInstance(self)
+        instance = LoxInstance(self)
+        initialiser = self.find_method("init")
+        if initialiser is not None:
+            initialiser.bind(instance).call(interpreter, arguments)
+        return instance
 
     def arity(self) -> int:
+        initialiser = self.find_method("init")
+        if initialiser is not None:
+            return initialiser.arity()
         return 0
 
     def find_method(self, name: str) -> Optional[LoxFunction]:

@@ -66,7 +66,9 @@ class Interpreter(ExprVisitor, StmtVisitor):
     def visit_class(self, stmt: Class) -> None:
         self.environment.define(stmt.name.lexeme, None)
         methods = {
-            method.name.lexeme: LoxFunction(method, self.environment)
+            method.name.lexeme: LoxFunction(
+                method, self.environment, method.name.lexeme == "init"
+            )
             for method in stmt.methods
         }
         cls = LoxClass(stmt.name.lexeme, methods)
@@ -76,7 +78,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
         self.evaluate(stmt.expression)
 
     def visit_function(self, stmt: Function) -> None:
-        function = LoxFunction(stmt, self.environment)
+        function = LoxFunction(stmt, self.environment, False)
         self.environment.define(stmt.name.lexeme, function)
 
     def visit_if(self, stmt: If) -> None:

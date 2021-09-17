@@ -11,11 +11,12 @@ from plox.statements import Function
 class LoxFunction:
     declaration: Function
     closure: Environment
+    is_initialiser: bool
 
     def bind(self, instance: "LoxInstance") -> "LoxFunction":
         environment = Environment(self.closure)
         environment.define("this", instance)
-        return LoxFunction(self.declaration, environment)
+        return LoxFunction(self.declaration, environment, self.is_initialiser)
 
     def call(self, interpreter: "Interpreter", arguments: List[Any]) -> None:
         environment = Environment(self.closure)
@@ -25,7 +26,12 @@ class LoxFunction:
         try:
             interpreter.execute_block(self.declaration.body, environment)
         except ReturnException as exc:
+            if self.is_initialiser:
+                return self.closure.get_at(0, "this")
             return exc.value
+
+        if self.is_initialiser:
+            return self.closure.get_at(0, "this")
 
     def arity(self) -> int:
         return len(self.declaration.params)

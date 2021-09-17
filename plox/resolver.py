@@ -39,6 +39,7 @@ from plox.tokens import Token
 class FunctionType(enum.Enum):
     NONE = enum.auto()
     FUNCTION = enum.auto()
+    INITIALISER = enum.auto()
     METHOD = enum.auto()
 
 
@@ -70,7 +71,10 @@ class Resolver(ExprVisitor, StmtVisitor):
         self.scopes[-1]["this"] = True
 
         for method in stmt.methods:
-            self.resolve_function(method, FunctionType.METHOD)
+            if method.name.lexeme == "init":
+                self.resolve_function(method, FunctionType.INITIALISER)
+            else:
+                self.resolve_function(method, FunctionType.METHOD)
 
         self.end_scope()
         self.current_class = enclosing_class
@@ -98,6 +102,12 @@ class Resolver(ExprVisitor, StmtVisitor):
                 stmt.keyword.line, "Can't return from top-level code.", stmt.keyword
             )
         if stmt.value is not None:
+            if self.current_function is FunctionType.INITIALISER:
+                Plox.error(
+                    stmt.keyword.line,
+                    "Can't return a value from an initializer.",
+                    stmt.keyword,
+                )
             self.resolve_expression(stmt.value)
 
     def visit_var(self, stmt: Var) -> None:
