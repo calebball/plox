@@ -67,6 +67,19 @@ class Resolver(ExprVisitor, StmtVisitor):
         self.declare(stmt.name)
         self.define(stmt.name)
 
+        if (
+            stmt.superclass is not None
+            and stmt.name.lexeme == stmt.superclass.name.lexeme
+        ):
+            Plox.error(
+                stmt.superclass.name.line,
+                "A class can't inherit from itself.",
+                stmt.superclass.name,
+            )
+
+        if stmt.superclass is not None:
+            self.resolve_expression(stmt.superclass)
+
         self.begin_scope()
         self.scopes[-1]["this"] = True
 

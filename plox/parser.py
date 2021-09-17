@@ -299,12 +299,18 @@ class Parser:
         return statements
 
     def class_declaration(self) -> Class:
-        """Parsen the contents of a class declaration from the token stream.
+        """Parse the contents of a class declaration from the token stream.
 
         This method implements the rule
-            classDecl -> "class" IDENTIFIER "{" function* "}" ;
+            classDecl -> "class" IDENTIFIER ( "<" IDENTIFIER )? "{" function* "}" ;
         """
         name = self.consume(TokenType.IDENTIFIER, "Expect class name.")
+
+        superclass = None
+        if self.match(TokenType.LESS):
+            self.consume(TokenType.IDENTIFIER, "Expect superclass name.")
+            superclass = Variable(self.previous())
+
         self.consume(TokenType.LEFT_BRACE, "Expect '{' before class body.")
 
         methods = []
@@ -313,7 +319,7 @@ class Parser:
 
         self.consume(TokenType.RIGHT_BRACE, "Expect '}' after class body.")
 
-        return Class(name, methods)
+        return Class(name, superclass, methods)
 
     def expression_statement(self) -> Expression:
         """Parse the contents of an expression statement from the token stream.

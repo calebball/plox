@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from attr import define
 
-from plox.expressions import Expr
+from plox.expressions import Expr, Variable
 from plox.tokens import Token
 
 
@@ -23,6 +23,7 @@ class Block(Stmt):
 @define
 class Class(Stmt):
     name: Token
+    superclass: Variable
     methods: List["Function"]
 
     def accept(self, visitor: "StmtVisitor"):

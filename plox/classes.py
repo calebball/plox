@@ -32,6 +32,7 @@ class LoxInstance:
 @define
 class LoxClass:
     name: str
+    superclass: Optional["LoxClass"]
     methods: Dict[str, LoxFunction]
 
     def call(self, interpreter: "Interpreter", arguments: List[Any]) -> LoxInstance:
@@ -48,7 +49,11 @@ class LoxClass:
         return 0
 
     def find_method(self, name: str) -> Optional[LoxFunction]:
-        return self.methods.get(name)
+        try:
+            return self.methods[name]
+        except KeyError:
+            if self.superclass is not None:
+                return self.superclass.find_method(name)
 
     def __str__(self) -> str:
         return self.name
