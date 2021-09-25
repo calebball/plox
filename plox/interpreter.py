@@ -41,7 +41,7 @@ from plox.tokens import Token, TokenType
 
 @define
 class Interpreter(ExprVisitor, StmtVisitor):
-    globals: ClassVar[Environment] = standard_global_environment()
+    globals: ClassVar[Environment] = field(factory=standard_global_environment)
     environment: Environment = field()
     locals: Dict[Expr, int] = field(factory=dict)
 
