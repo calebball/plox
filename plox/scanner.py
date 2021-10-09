@@ -1,25 +1,9 @@
-from typing import Any, List, Optional
-
-from attr import define, Factory
+from io import TextIOBase
+from typing import List, Optional
 
 from plox.cli import Plox
+from plox.io import PeekableTextIO
 from plox.tokens import TokenType, Token
-
-
-def is_digit(char: str) -> bool:
-    """Check if a one character string is a digit."""
-    return ord("0") <= ord(char) <= ord("9")
-
-
-def is_alpha(char: str) -> bool:
-    """Check if a one character string is an alphabetic character or an
-    undercore.
-    """
-    return (
-        ord("a") <= ord(char) <= ord("z")
-        or ord("A") <= ord(char) <= ord("Z")
-        or ord(char) == ord("_")
-    )
 
 
 keywords = {
@@ -42,172 +26,104 @@ keywords = {
 }
 
 
-@define
-class Scanner:
-    source: str
-    tokens: List[Token] = Factory(list)
-    start: int = 0
-    current: int = 0
-    line: int = 1
+def return_token(token_type: TokenType):
+    def return_token_closure(char, stream):
+        return Token(token_type, char, None, stream.line)
+    return return_token_closure
 
-    def scan_tokens(self):
-        while not self.is_at_end:
-            self.start = self.current
-            self.scan_token()
 
-        self.tokens.append(Token(TokenType.EOF, "", None, self.line))
-        return self.tokens
+def select_with_peek(peek_char: str, match_token: TokenType, no_match_token: TokenType):
+    def select_with_peek_closure(char, stream):
+        if stream.match(peek_char):
+            return Token(match_token, "".join([char, peek_char]), None, stream.line)
+        return Token(no_match_token, char, None, stream.line)
+    return select_with_peek_closure
 
-    def scan_token(self):
-        c = self.advance()
 
-        # Characters that uniquely define a single token
-        if c == "(":
-            self.add_token(TokenType.LEFT_PAREN)
-        elif c == ")":
-            self.add_token(TokenType.RIGHT_PAREN)
-        elif c == "{":
-            self.add_token(TokenType.LEFT_BRACE)
-        elif c == "}":
-            self.add_token(TokenType.RIGHT_BRACE)
-        elif c == ",":
-            self.add_token(TokenType.COMMA)
-        elif c == ".":
-            self.add_token(TokenType.DOT)
-        elif c == "-":
-            self.add_token(TokenType.MINUS)
-        elif c == "+":
-            self.add_token(TokenType.PLUS)
-        elif c == ";":
-            self.add_token(TokenType.SEMICOLON)
-        elif c == "*":
-            self.add_token(TokenType.STAR)
+def scan_slash_or_comment(char: str, stream: PeekableTextIO) -> Optional[Token]:
+    if stream.match("/"):
+        while stream.peek() and stream.peek() != "\n":
+            stream.advance()
+        return None
 
-        # Characters which may generate a single character token or a
-        # two-character token
-        elif c == "!":
-            self.add_token(TokenType.BANG_EQUAL if self.match("=") else TokenType.BANG)
-        elif c == "=":
-            self.add_token(
-                TokenType.EQUAL_EQUAL if self.match("=") else TokenType.EQUAL
-            )
-        elif c == ">":
-            self.add_token(
-                TokenType.GREATER_EQUAL if self.match("=") else TokenType.GREATER
-            )
-        elif c == "<":
-            self.add_token(TokenType.LESS_EQUAL if self.match("=") else TokenType.LESS)
+    return Token(TokenType.SLASH, "/", None, stream.line)
 
-        # Check for a comment
-        elif c == "/":
-            if self.match("/"):
-                while self.peek() != "\n" and not self.is_at_end:
-                    self.advance()
 
-            elif self.match("*"):
-                self.block_comment()
+def consume_space(char, stream):
+    while stream.peek() in [" ", "\t", "\n"]:
+        stream.advance()
 
-            else:
-                self.add_token(TokenType.SLASH)
 
-        # Discard whitespace
-        elif c in ["\t", " "]:
-            pass
-        elif c == "\n":
-            self.line += 1
+def scan_string(char: str, stream: PeekableTextIO) -> Optional[Token]:
+    chars = []
+    while stream.peek() and stream.peek() != '"':
+        chars.append(stream.advance())
+    if not stream.peek():
+        Plox.error(stream.line, "Unterminated string.")
+        return None
+    stream.advance()
+    string = "".join(chars)
+    return Token(TokenType.STRING, f'"{string}"', string, stream.line)
 
-        # Literal tokens
-        elif c == '"':
-            self.string()
-        elif is_digit(c):
-            self.number()
 
-        elif is_alpha(c):
-            self.identifier()
+def scan_number_or_identifier(char: str, stream: PeekableTextIO) -> Optional[Token]:
+    if char.isdigit():
+        chars = [char]
+        while stream.peek().isdigit():
+            chars.append(stream.advance())
 
-        else:
-            Plox.error(self.line, "Unexpected character.")
+        if stream.peek() == "." and stream.peek(1).isdigit():
+            chars.append(stream.advance())
+            while stream.peek().isdigit():
+                chars.append(stream.advance())
 
-    @property
-    def is_at_end(self) -> bool:
-        return self.current >= len(self.source)
+        string = "".join(chars)
+        return Token(TokenType.NUMBER, string, float(string), stream.line)
 
-    def advance(self) -> str:
-        char = self.source[self.current]
-        self.current += 1
-        return char
+    if char.isalpha() or char == "_":
+        chars = [char]
+        while stream.peek().isalnum() or stream.peek() == "_":
+            chars.append(stream.advance())
 
-    def match(self, char: str) -> bool:
-        if self.is_at_end:
-            return False
-        if self.source[self.current] != char:
-            return False
-        self.current += 1
-        return True
+        lexeme = "".join(chars)
+        token_type = keywords.get(lexeme, TokenType.IDENTIFIER)
+        return Token(token_type, lexeme, None, stream.line)
 
-    def peek(self) -> str:
-        if self.is_at_end:
-            return "\0"
-        return self.source[self.current]
+    Plox.error(stream.line, "Unexpected character.")
+    return None
 
-    def peek_next(self) -> str:
-        if self.current + 1 >= len(self.source):
-            return "\0"
-        return self.source[self.current + 1]
 
-    def block_comment(self):
-        while (
-            not (self.peek() == "*" and self.peek_next() == "/") and not self.is_at_end
-        ):
-            if self.peek() == "\n":
-                self.line += 1
+scanners = {
+    "(": return_token(TokenType.LEFT_PAREN),
+    ")": return_token(TokenType.RIGHT_PAREN),
+    "{": return_token(TokenType.LEFT_BRACE),
+    "}": return_token(TokenType.RIGHT_BRACE),
+    ",": return_token(TokenType.COMMA),
+    ".": return_token(TokenType.DOT),
+    "-": return_token(TokenType.MINUS),
+    "+": return_token(TokenType.PLUS),
+    ";": return_token(TokenType.SEMICOLON),
+    "*": return_token(TokenType.STAR),
+    "!": select_with_peek("=", TokenType.BANG_EQUAL, TokenType.BANG),
+    "=": select_with_peek("=", TokenType.EQUAL_EQUAL, TokenType.EQUAL),
+    ">": select_with_peek("=", TokenType.GREATER_EQUAL, TokenType.GREATER),
+    "<": select_with_peek("=", TokenType.LESS_EQUAL, TokenType.LESS),
+    "/": scan_slash_or_comment,
+    "\t": consume_space,
+    " ": consume_space,
+    "\n": consume_space,
+    '"': scan_string,
+}
 
-            self.advance()
 
-        if self.is_at_end:
-            Plox.error(self.line, "Unterminated block comment.")
-            return
+def scan_tokens(source: TextIOBase) -> List[Token]:
+    stream = PeekableTextIO(source, 2)
+    tokens = []
 
-        self.advance()
-        self.advance()
+    while (char := stream.advance()):
+        scanning_function = scanners.get(char, scan_number_or_identifier)
+        if (token := scanning_function(char, stream)):
+            tokens.append(token)
 
-    def string(self):
-        while self.peek() != '"' and not self.is_at_end:
-            if self.peek() == "\n":
-                self.line += 1
-            self.advance()
-
-        if self.is_at_end:
-            Plox.error(self.line, "Unterminated string.")
-            return
-
-        # Consume the closing " character
-        self.advance()
-        self.add_token(
-            TokenType.STRING, literal=self.source[self.start + 1 : self.current - 1]
-        )
-
-    def number(self):
-        while is_digit(self.peek()):
-            self.advance()
-
-        if self.peek() == "." and is_digit(self.peek_next()):
-            self.advance()
-
-            while is_digit(self.peek()):
-                self.advance()
-
-        self.add_token(TokenType.NUMBER, float(self.source[self.start : self.current]))
-
-    def identifier(self):
-        while is_alpha(self.peek()) or is_digit(self.peek()):
-            self.advance()
-
-        self.add_token(
-            keywords.get(self.source[self.start : self.current], TokenType.IDENTIFIER)
-        )
-
-    def add_token(self, type: TokenType, literal: Optional[Any] = None):
-        self.tokens.append(
-            Token(type, self.source[self.start : self.current], literal, self.line)
-        )
+    tokens.append(Token(TokenType.EOF, "", None, stream.line))
+    return tokens

@@ -1,5 +1,6 @@
 import readline
 import sys
+from io import StringIO, TextIOBase
 from typing import List, Optional
 
 from plox.errors import LoxRuntimeError
@@ -26,7 +27,7 @@ class Plox:
     @classmethod
     def run_file(cls, path: str):
         with open(path, "r") as source:
-            cls.run(source.read())
+            cls.run(source)
 
         if cls.HAD_ERROR:
             sys.exit(65)
@@ -38,23 +39,22 @@ class Plox:
         try:
             while True:
                 line = input("> ")
-                cls.run(line)
+                cls.run(StringIO(line))
                 cls.HAD_ERROR = False
         except EOFError:
             pass
 
     @classmethod
-    def run(cls, source: str):
+    def run(cls, source: TextIOBase):
         from plox.interpreter import Interpreter
         from plox.parser import Parser
         from plox.resolver import Resolver
-        from plox.scanner import Scanner
+        from plox.scanner import scan_tokens
 
         if cls.interpreter is None:
             cls.interpreter = Interpreter()
 
-        scanner = Scanner(source)
-        tokens = scanner.scan_tokens()
+        tokens = scan_tokens(source)
 
         statements = Parser(tokens).parse()
 
